@@ -3,10 +3,10 @@ import { User, Lock, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface LoginFormProps {
-  onReturnHome: () => void;
+  onReturn: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onReturnHome }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onReturn }) => {
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
@@ -40,9 +40,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onReturnHome }) => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Muhimmath Library Management System
-          </p>
-          <p className="mt-4 text-center text-xs text-gray-500">
-            Please use the credentials for an admin user from your Supabase project.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -105,11 +102,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onReturnHome }) => {
         <div className="text-center">
           <button
             type="button"
-            onClick={onReturnHome}
+            onClick={onReturn}
             className="font-medium text-purple-600 hover:text-purple-500 flex items-center justify-center w-full gap-2"
           >
             <ArrowLeft size={16} />
-            Return to Home Page
+            Return to Landing Page
           </button>
         </div>
       </div>

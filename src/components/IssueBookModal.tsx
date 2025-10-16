@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import SearchableSelect from './SearchableSelect';
 
@@ -12,7 +12,7 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onSave }) => {
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [days, setDays] = useState(14);
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +20,7 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onSave }) => {
       alert('Please select both a book and a member.');
       return;
     }
-    setLoading(true);
+    setIsSubmitting(true);
 
     try {
       const dueDate = new Date();
@@ -33,13 +33,14 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onSave }) => {
       });
 
       if (error) throw error;
-
+      
+      alert(`Successfully issued "${selectedBook.label}" to ${selectedMember.label}.`);
       onSave();
     } catch (error) {
       console.error('Error issuing book:', error);
-      alert('Error issuing book. The book may not be available.');
+      alert('Error issuing book. The book may not be available or the details are incorrect.');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -53,18 +54,18 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onSave }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Select Book *</label>
             <SearchableSelect
               value={selectedBook}
               onChange={setSelectedBook}
-              placeholder="Search for a book..."
+              placeholder="Type DDC or book title..."
               tableName="books"
               labelField="title"
-              searchFields={['title', 'author', 'isbn']}
+              searchFields={['title', 'ddc_number']}
+              onlyAvailableBooks={true}
               required
-              onlyAvailableBooks
             />
           </div>
 
@@ -73,21 +74,17 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onSave }) => {
             <SearchableSelect
               value={selectedMember}
               onChange={setSelectedMember}
-              placeholder="Search for a member..."
+              placeholder="Type register no. or member name..."
               tableName="members"
               labelField="name"
-              searchFields={['name', 'email', 'phone']}
+              searchFields={['name', 'register_number']}
               required
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Loan Period (Days) *</label>
-            <select
-              value={days}
-              onChange={(e) => setDays(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            >
+            <select value={days} onChange={(e) => setDays(parseInt(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white">
               <option value={7}>7 days</option>
               <option value={14}>14 days</option>
               <option value={21}>21 days</option>
@@ -95,18 +92,10 @@ const IssueBookModal: React.FC<IssueBookModalProps> = ({ onClose, onSave }) => {
             </select>
           </div>
 
-          {selectedBook && selectedMember && (
-            <div className="bg-gray-50 p-4 rounded-md text-sm text-gray-600 space-y-1">
-              <p><strong>Book:</strong> {selectedBook.label}</p>
-              <p><strong>Member:</strong> {selectedMember.label}</p>
-              <p><strong>Due Date:</strong> {new Date(Date.now() + days * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
-            </div>
-          )}
-
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-md">Cancel</button>
-            <button type="submit" disabled={loading || !selectedBook || !selectedMember} className="px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50">
-              {loading ? 'Issuing...' : 'Issue Book'}
+            <button type="submit" disabled={isSubmitting || !selectedBook || !selectedMember} className="px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50 flex items-center justify-center min-w-[110px]">
+              {isSubmitting ? <Loader2 className="animate-spin" /> : 'Issue Book'}
             </button>
           </div>
         </form>

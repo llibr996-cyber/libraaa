@@ -1,0 +1,67 @@
+import React from 'react';
+import { X, Printer } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
+
+interface BookQRCodeModalProps {
+  bookDdcNumber?: string | null;
+  bookTitle: string;
+  onClose: () => void;
+}
+
+const BookQRCodeModal: React.FC<BookQRCodeModalProps> = ({ bookDdcNumber, bookTitle, onClose }) => {
+  const handlePrint = () => {
+    const printContent = document.getElementById('qr-print-area');
+    if (!printContent) return;
+
+    const printWindow = window.open('', '', 'height=600,width=800');
+    if (printWindow) {
+      printWindow.document.write('<html><head><title>Print QR Code</title>');
+      printWindow.document.write('<style>body { font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; height: 100vh; } .container { display: flex; flex-direction: column; align-items: center; justify-content: center; } canvas { max-width: 80%; height: auto; } </style>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write('<div class="container">');
+      printWindow.document.write(printContent.innerHTML);
+      printWindow.document.write('</div>');
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Book QR Code</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="p-6 text-center">
+          <div id="qr-print-area">
+            <h3 className="text-lg font-medium text-gray-800 mb-2">{bookTitle}</h3>
+            <p className="text-sm text-gray-500 mb-4">DDC: {bookDdcNumber || 'N/A'}</p>
+            <div className="flex justify-center">
+              {bookDdcNumber ? (
+                <QRCodeCanvas value={bookDdcNumber} size={256} includeMargin={true} />
+              ) : (
+                <div className="w-64 h-64 flex items-center justify-center bg-gray-100 text-gray-500">
+                  No DDC Number
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-md">Close</button>
+          <button onClick={handlePrint} disabled={!bookDdcNumber} className="px-4 py-2 bg-purple-600 text-white rounded-md flex items-center gap-2 disabled:bg-purple-300">
+            <Printer size={18} />
+            Print
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BookQRCodeModal;

@@ -31,43 +31,113 @@ const ReportsModal: React.FC<ReportsModalProps> = ({ onClose }) => {
   const [detailLoading, setDetailLoading] = useState(false);
 
   const fetchReportData = useCallback(async () => {
-    if (detailView) return; // Don't refetch main data when in detail view
+    if (detailView) return;
 
     setLoading(true);
     setError(null);
     try {
-      let data, rpcError;
-      switch (activeTab) {
-        case 'Most Read':
-          const { data: readData, error: readError } = await supabase.rpc('get_most_read_books_filtered', { time_period: timeFilter });
-          data = readData;
-          rpcError = readError;
-          setMostRead(data || []);
-          break;
-        case 'Most Active':
-          const { data: activeData, error: activeError } = await supabase.rpc('get_most_active_members_filtered', { time_period: timeFilter });
-          data = activeData;
-          rpcError = activeError;
-          setMostActive(data || []);
-          break;
-        case 'Issued':
-          const { data: issuedData, error: issuedError } = await supabase.from('circulation').select('id, due_date, books(title), members(name)').eq('status', 'issued');
-          data = (issuedData || []).map((item: any) => ({
-            circulation_id: item.id,
-            book_title: item.books?.title || 'Unknown Book',
-            member_name: item.members?.name || 'Unknown Member',
-            due_date: item.due_date
-          }));
-          rpcError = issuedError;
-          setIssuedBooks(data);
-          break;
-      }
-      if (rpcError) throw rpcError;
+        const now = new Date();
+        let fromDate: string | undefined;
+        if (timeFilter !== 'all') {
+            const date = new Date();
+            if (timeFilter === 'year') date.setFullYear(now.getFullYear() - 1);
+            else if (timeFilter === 'month') date.setMonth(now.getMonth() - 1);
+            else if (timeFilter === 'week') date.setDate(now.getDate() - 7);
+            fromDate = date.toISOString();
+        }
+
+        if (activeTab === 'Most Read') {
+            let query = supabase.from('circulation').select('book_id, books(id, title, author)');
+            if (fromDate) {
+                query = query.gte('issue_date', fromDate);
+            }
+            const { data: circulationData, error: circulationError } = await query;
+            if (circulationError) throw circulationError;
+
+            if (!circulationData) {
+                setMostRead([]);
+                setLoading(false);
+                return;
+            }
+
+            const bookCounts: { [key: string]: { count: number; book: any } } = {};
+            circulationData.forEach(c => {
+                if (c.book_id && c.books) {
+                    if (!bookCounts[c.book_id]) {
+                        bookCounts[c.book_id] = { count: 0, book: c.books };
+                    }
+                    bookCounts[c.book_id].count++;
+                }
+            });
+
+            const sortedBooks = Object.values(bookCounts)
+                .map(item => ({
+                    book_id: item.book.id,
+                    title: item.book.title,
+                    author: item.book.author,
+                    read_count: item.count,
+                }))
+                .sort((a, b) => b.read_count - a.read_count)
+                .slice(0, 50);
+
+            setMostRead(sortedBooks);
+
+        } else if (activeTab === 'Most Active') {
+            let query = supabase.from('circulation').select('member_id, members(id, name, email)');
+            if (fromDate) {
+                query = query.gte('issue_date', fromDate);
+            }
+            const { data: circulationData, error: circulationError } = await query;
+            if (circulationError) throw circulationError;
+
+            if (!circulationData) {
+                setMostActive([]);
+                setLoading(false);
+                return;
+            }
+
+            const memberCounts: { [key: string]: { count: number; member: any } } = {};
+            circulationData.forEach(c => {
+                if (c.member_id && c.members) {
+                    if (!memberCounts[c.member_id]) {
+                        memberCounts[c.member_id] = { count: 0, member: c.members };
+                    }
+                    memberCounts[c.member_id].count++;
+                }
+            });
+            
+            const sortedMembers = Object.values(memberCounts)
+                .map(item => ({
+                    member_id: item.member.id,
+                    name: item.member.name,
+                    email: item.member.email,
+                    book_count: item.count,
+                }))
+                .sort((a, b) => b.book_count - a.book_count)
+                .slice(0, 50);
+            
+            setMostActive(sortedMembers);
+
+        } else if (activeTab === 'Issued') {
+            const { data: issuedData, error: issuedError } = await supabase
+                .from('circulation')
+                .select('id, due_date, books(title), members(name)')
+                .eq('status', 'issued');
+            if (issuedError) throw issuedError;
+
+            const formattedIssuedData = (issuedData || []).map((item: any) => ({
+                circulation_id: item.id,
+                book_title: item.books?.title || 'Unknown Book',
+                member_name: item.members?.name || 'Unknown Member',
+                due_date: item.due_date
+            }));
+            setIssuedBooks(formattedIssuedData);
+        }
     } catch (err: any) {
-      console.error(`Error fetching ${activeTab} report:`, err);
-      setError(err.message || `Failed to fetch ${activeTab} report.`);
+        console.error(`Error fetching ${activeTab} report:`, err);
+        setError(err.message || `Failed to fetch ${activeTab} report.`);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   }, [activeTab, timeFilter, detailView]);
 
@@ -81,18 +151,38 @@ const ReportsModal: React.FC<ReportsModalProps> = ({ onClose }) => {
     setDetailLoading(true);
     setError(null);
     try {
-      let data, rpcError;
       if (detailView.type === 'book') {
-        const { data: detail, error: detailErr } = await supabase.rpc('get_readers_of_book', { p_book_id: detailView.item.book_id });
-        data = detail;
-        rpcError = detailErr;
+        const { data, error } = await supabase
+            .from('circulation')
+            .select('id, issue_date, members(name, email)')
+            .eq('book_id', detailView.item.book_id)
+            .order('issue_date', { ascending: false });
+        if (error) throw error;
+
+        const formattedData = data.map(d => ({
+            id: d.id,
+            name: d.members?.name,
+            email: d.members?.email,
+            read_date: d.issue_date,
+        }));
+        setDetailData(formattedData || []);
+
       } else { // 'member'
-        const { data: detail, error: detailErr } = await supabase.rpc('get_books_read_by_member', { p_member_id: detailView.item.member_id });
-        data = detail;
-        rpcError = detailErr;
+        const { data, error } = await supabase
+            .from('circulation')
+            .select('id, issue_date, books(title, author)')
+            .eq('member_id', detailView.item.member_id)
+            .order('issue_date', { ascending: false });
+        if (error) throw error;
+        
+        const formattedData = data.map(d => ({
+            id: d.id,
+            title: d.books?.title,
+            author: d.books?.author,
+            read_date: d.issue_date,
+        }));
+        setDetailData(formattedData || []);
       }
-      if (rpcError) throw rpcError;
-      setDetailData(data || []);
     } catch (err: any) {
       console.error('Error fetching detail data:', err);
       setError(err.message || 'Failed to fetch details.');

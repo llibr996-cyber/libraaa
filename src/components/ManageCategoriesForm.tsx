@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, Folder, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Search, Folder, Loader2, Edit, Check, X } from 'lucide-react';
 import { supabase, type Category } from '../lib/supabase';
 
 interface ManageCategoriesFormProps {
@@ -13,6 +13,9 @@ const ManageCategoriesForm: React.FC<ManageCategoriesFormProps> = ({ onSave }) =
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editedName, setEditedName] = useState('');
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -67,6 +70,34 @@ const ManageCategoriesForm: React.FC<ManageCategoriesFormProps> = ({ onSave }) =
     }
   };
 
+  const handleEditClick = (category: Category) => {
+    setEditingCategory(category);
+    setEditedName(category.name);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategory(null);
+    setEditedName('');
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory || !editedName.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    const { error } = await supabase
+      .from('categories')
+      .update({ name: editedName.trim() })
+      .eq('id', editingCategory.id);
+
+    if (error) {
+      alert(`Error updating category: ${error.message}`);
+    } else {
+      handleCancelEdit();
+      onSave();
+    }
+    setIsSubmitting(false);
+  };
+
   const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -108,10 +139,29 @@ const ManageCategoriesForm: React.FC<ManageCategoriesFormProps> = ({ onSave }) =
             </div>
           ) : filteredCategories.length > 0 ? filteredCategories.map(cat => (
             <div key={cat.id} className="flex justify-between items-center p-3 bg-neutral-50 hover:bg-neutral-100 rounded-lg transition-colors">
-              <span className="text-neutral-700 font-medium">{cat.name}</span>
-              <button onClick={() => handleDeleteCategory(cat.id)} className="text-neutral-400 hover:text-red-500 transition-colors">
-                <Trash2 size={18} />
-              </button>
+              {editingCategory?.id === cat.id ? (
+                <div className="flex-grow flex items-center gap-2">
+                  <input 
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="flex-grow px-2 py-1 border border-primary rounded-md"
+                    autoFocus
+                  />
+                  <button onClick={handleUpdateCategory} disabled={isSubmitting} className="text-green-500 hover:text-green-700 disabled:opacity-50"><Check size={20} /></button>
+                  <button onClick={handleCancelEdit} className="text-red-500 hover:text-red-700"><X size={20} /></button>
+                </div>
+              ) : (
+                <>
+                  <span className="text-neutral-700 font-medium">{cat.name}</span>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => handleEditClick(cat)} className="text-neutral-400 hover:text-primary transition-colors"><Edit size={16} /></button>
+                    <button onClick={() => handleDeleteCategory(cat.id)} className="text-neutral-400 hover:text-red-500 transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )) : (
             <div className="text-center py-10 h-full flex flex-col justify-center items-center">
