@@ -18,10 +18,9 @@ const BulkQRDownloadModal: React.FC<BulkQRDownloadModalProps> = ({ onClose }) =>
   useEffect(() => {
     const fetchBooks = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('books')
         .select('id, title, ddc_number')
-        .not('ddc_number', 'is', null)
         .order('created_at', { ascending: false });
       
       if (data) setBooks(data);
@@ -58,7 +57,7 @@ const BulkQRDownloadModal: React.FC<BulkQRDownloadModalProps> = ({ onClose }) =>
 
     const booksToPrint = books.filter(b => selectedBooks.has(b.id));
     const pages: Book[][] = [];
-    const chunkSize = 25;
+    const chunkSize = 25; // 5x5 grid
 
     for (let i = 0; i < booksToPrint.length; i += chunkSize) {
       pages.push(booksToPrint.slice(i, i + chunkSize));
@@ -117,7 +116,7 @@ const BulkQRDownloadModal: React.FC<BulkQRDownloadModalProps> = ({ onClose }) =>
                     />
                     <div>
                       <p className="font-medium">{book.title}</p>
-                      <p className="text-sm text-gray-500">DDC: {book.ddc_number}</p>
+                      <p className="text-sm text-gray-500">DDC: {book.ddc_number || 'N/A'}</p>
                     </div>
                   </div>
                 ))
@@ -141,9 +140,9 @@ const BulkQRDownloadModal: React.FC<BulkQRDownloadModalProps> = ({ onClose }) =>
             <div key={pageIndex} className="a4-page">
               {page.map(book => (
                 <div key={book.id} className="qr-item">
-                  <QRCodeCanvas value={book.ddc_number!} size={128} />
+                  <QRCodeCanvas value={`https://ssfmuhimmathlibrary.netlify.app/book/${book.id}`} size={128} />
                   <p className="qr-item-title">{book.title}</p>
-                  <p className="qr-item-ddc">{book.ddc_number}</p>
+                  <p className="qr-item-ddc">{book.ddc_number || book.id.substring(0, 8)}</p>
                 </div>
               ))}
             </div>

@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Menu, X, Facebook, Twitter, Instagram } from 'lucide-react';
 import { supabase, type Book } from '../lib/supabase';
 import WebsiteQRCode from './WebsiteQRCode';
 
-interface LandingPageProps {
-  onNavigate: (view: 'home' | 'login') => void;
-}
-
-const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
+const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [collection, setCollection] = useState<Book[]>([]);
   const [loadingCollection, setLoadingCollection] = useState(true);
@@ -56,7 +54,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               ))}
             </nav>
             <div className="flex items-center gap-4">
-              <button onClick={() => onNavigate('login')} className="hidden md:block bg-primary text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-dark transition-colors">
+              <button onClick={() => navigate('/login')} className="hidden md:block bg-primary text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-dark transition-colors">
                 Login
               </button>
               <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-neutral-600">
@@ -75,7 +73,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             {navLinks.map(link => (
               <a key={link.name} href={link.href} onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:bg-neutral-100">{link.name}</a>
             ))}
-            <button onClick={() => { onNavigate('login'); setIsMenuOpen(false); }} className="w-full text-left bg-primary text-white px-3 py-2 rounded-md font-semibold">
+            <button onClick={() => { navigate('/login'); setIsMenuOpen(false); }} className="w-full text-left bg-primary text-white px-3 py-2 rounded-md font-semibold">
               Login
             </button>
           </motion.div>
@@ -98,7 +96,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           >
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight drop-shadow-lg">MUHIMMATH LIBRARY</h1>
             <p className="mt-4 text-lg md:text-xl max-w-2xl mx-auto drop-shadow">Where every book is a new adventure</p>
-            <button onClick={() => onNavigate('home')} className="mt-8 bg-primary text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-primary-dark transition-transform hover:scale-105 shadow-lg">
+            <button onClick={() => navigate('/home')} className="mt-8 bg-primary text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-primary-dark transition-transform hover:scale-105 shadow-lg">
               Get Started
             </button>
           </motion.div>
@@ -162,7 +160,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 ))}
               </motion.div>
             )}
-            <button onClick={() => onNavigate('home')} className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors">
+            <button onClick={() => navigate('/home')} className="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors">
               View All
             </button>
           </div>

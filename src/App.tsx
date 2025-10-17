@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import LoginForm from './components/LoginForm';
 import AdminDashboard from './components/AdminDashboard';
 import HomePage from './components/HomePage';
 import LandingPage from './components/LandingPage';
+import BookDetailPage from './components/BookDetailPage';
+
+const ProtectedRoute = ({ session, children }: { session: Session | null, children: JSX.Element }) => {
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [view, setView] = useState<'landing' | 'home' | 'login'>('landing');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,22 +27,10 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (!session) {
-        setView('landing'); // If user logs out, return to landing page
-      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const handleNavigate = (newView: 'home' | 'login') => {
-    setView(newView);
-  };
-  
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    // The onAuthStateChange listener will handle setting the view to 'landing'
-  };
 
   if (loading) {
     return (
@@ -50,19 +46,23 @@ function App() {
     );
   }
 
-  if (session) {
-    return <AdminDashboard onLogout={handleLogout} />;
-  }
-
-  if (view === 'login') {
-    return <LoginForm onReturn={() => setView('landing')} />;
-  }
-  
-  if (view === 'home') {
-    return <HomePage onAdminLoginClick={() => setView('login')} onReturnHome={() => setView('landing')} />;
-  }
-
-  return <LandingPage onNavigate={handleNavigate} />;
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route path="/book/:bookId" element={<BookDetailPage />} />
+      <Route path="/login" element={session ? <Navigate to="/admin" /> : <LoginForm />} />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute session={session}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
 }
 
 export default App;

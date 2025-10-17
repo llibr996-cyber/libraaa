@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import ActionCard from './ActionCard';
 import LibraryCollection from './LibraryCollection';
@@ -7,12 +8,8 @@ import WriteReviewModal from './WriteReviewModal';
 import ReportsModal from './ReportsModal';
 import { Lightbulb, Edit, BarChart3, ArrowLeft } from 'lucide-react';
 
-interface HomePageProps {
-  onAdminLoginClick: () => void;
-  onReturnHome: () => void;
-}
-
-const HomePage: React.FC<HomePageProps> = ({ onAdminLoginClick, onReturnHome }) => {
+const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
@@ -46,9 +43,9 @@ const HomePage: React.FC<HomePageProps> = ({ onAdminLoginClick, onReturnHome }) 
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header onAdminLoginClick={onAdminLoginClick} />
+      <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button onClick={onReturnHome} className="flex items-center gap-2 text-sm font-medium text-purple-600 hover:text-purple-800 mb-6">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-medium text-purple-600 hover:text-purple-800 mb-6">
             <ArrowLeft size={16} /> Back to Landing Page
         </button>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

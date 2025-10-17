@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart3, Bell, LogOut, Search, Plus, Star, Folder, BookOpen, QrCode, Printer, Users, Download, Loader2, DollarSign, Edit, Trash2 } from 'lucide-react';
 import { supabase, type Book, type Circulation, type Member, type Feedback, type Category } from '../lib/supabase';
 import MemberModal from './MemberModal';
@@ -12,16 +13,13 @@ import FinesPage from './FinesPage';
 import BookModal from './BookModal';
 import Pagination from './Pagination';
 
-interface AdminDashboardProps {
-  onLogout: () => void;
-}
-
 type TabType = 'Circulation' | 'Library' | 'Members' | 'Fines' | 'Feedback' | 'History';
 type BookStatusFilter = 'Available' | 'Issued' | 'Overdue';
 type ColumnKey = 'title' | 'author' | 'publisher' | 'category' | 'ddc' | 'price' | 'copies';
 
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
+const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('Circulation');
   const [activeFilter, setActiveFilter] = useState<BookStatusFilter>('Available');
   const [circulationSearch, setCirculationSearch] = useState('');
@@ -62,6 +60,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   });
 
   const tabs: TabType[] = ['Circulation', 'Library', 'Members', 'Fines', 'Feedback', 'History'];
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -304,7 +307,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             <div className="flex items-center gap-4">
               <button className="text-gray-600 hover:text-gray-900"><BarChart3 size={20} /></button>
               <button className="text-gray-600 hover:text-gray-900"><Bell size={20} /></button>
-              <button onClick={onLogout} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+              <button onClick={handleLogout} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                 <LogOut size={20} /> <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
@@ -436,7 +439,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                             <div className="flex items-center gap-4">
                               <button onClick={() => { setEditingBook(book); setShowBookModal(true); }} className="text-purple-600 hover:text-purple-900" title="Edit Book"><Edit size={18} /></button>
                               <button onClick={() => handleDeleteBook(book.id)} className="text-red-600 hover:text-red-900" title="Delete Book"><Trash2 size={18} /></button>
-                              <button onClick={() => handleShowQR(book)} disabled={!book.ddc_number} className="text-gray-500 hover:text-purple-600 disabled:text-gray-300 disabled:cursor-not-allowed" title="Show QR Code"><QrCode size={18} /></button>
+                              <button onClick={() => handleShowQR(book)} className="text-gray-500 hover:text-purple-600" title="Show QR Code"><QrCode size={18} /></button>
                             </div>
                           </td>
                         </tr>
@@ -660,7 +663,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       {showMemberModal && <MemberModal member={editingMember} onClose={() => { setShowMemberModal(false); setEditingMember(null); }} onSave={() => { setShowMemberModal(false); setEditingMember(null); }} />}
       {showIssueModal && <IssueBookModal onClose={() => setShowIssueModal(false)} onSave={() => setShowIssueModal(false)} />}
       {showScanModal && <ScanQRModal onClose={() => setShowScanModal(false)} onSuccess={fetchData} />}
-      {showBookQRModal && selectedBookForQR && <BookQRCodeModal bookDdcNumber={selectedBookForQR.ddc_number} bookTitle={selectedBookForQR.title} onClose={() => setShowBookQRModal(false)} />}
+      {showBookQRModal && selectedBookForQR && <BookQRCodeModal book={selectedBookForQR} onClose={() => setShowBookQRModal(false)} />}
       {showBulkQRModal && <BulkQRDownloadModal onClose={() => setShowBulkQRModal(false)} />}
       {showBookModal && <BookModal book={editingBook} categories={categories} onClose={() => { setShowBookModal(false); setEditingBook(null); }} onSave={() => { setShowBookModal(false); setEditingBook(null); }} />}
     </div>

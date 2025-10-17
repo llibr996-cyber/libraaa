@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Lock, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-interface LoginFormProps {
-  onReturn: () => void;
-}
-
-const LoginForm: React.FC<LoginFormProps> = ({ onReturn }) => {
+const LoginForm: React.FC = () => {
+  const navigate = useNavigate();
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
@@ -102,7 +100,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onReturn }) => {
         <div className="text-center">
           <button
             type="button"
-            onClick={onReturn}
+            onClick={() => navigate('/')}
             className="font-medium text-purple-600 hover:text-purple-500 flex items-center justify-center w-full gap-2"
           >
             <ArrowLeft size={16} />

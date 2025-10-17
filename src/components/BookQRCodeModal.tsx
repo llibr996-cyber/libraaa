@@ -1,14 +1,16 @@
 import React from 'react';
 import { X, Printer } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { type Book } from '../lib/supabase';
 
 interface BookQRCodeModalProps {
-  bookDdcNumber?: string | null;
-  bookTitle: string;
+  book: Book;
   onClose: () => void;
 }
 
-const BookQRCodeModal: React.FC<BookQRCodeModalProps> = ({ bookDdcNumber, bookTitle, onClose }) => {
+const BookQRCodeModal: React.FC<BookQRCodeModalProps> = ({ book, onClose }) => {
+  const bookUrl = `https://ssfmuhimmathlibrary.netlify.app/book/${book.id}`;
+
   const handlePrint = () => {
     const printContent = document.getElementById('qr-print-area');
     if (!printContent) return;
@@ -39,22 +41,16 @@ const BookQRCodeModal: React.FC<BookQRCodeModalProps> = ({ bookDdcNumber, bookTi
         </div>
         <div className="p-6 text-center">
           <div id="qr-print-area">
-            <h3 className="text-lg font-medium text-gray-800 mb-2">{bookTitle}</h3>
-            <p className="text-sm text-gray-500 mb-4">DDC: {bookDdcNumber || 'N/A'}</p>
+            <h3 className="text-lg font-medium text-gray-800 mb-2">{book.title}</h3>
+            <p className="text-sm text-gray-500 mb-4">ID: {book.id}</p>
             <div className="flex justify-center">
-              {bookDdcNumber ? (
-                <QRCodeCanvas value={bookDdcNumber} size={256} includeMargin={true} />
-              ) : (
-                <div className="w-64 h-64 flex items-center justify-center bg-gray-100 text-gray-500">
-                  No DDC Number
-                </div>
-              )}
+              <QRCodeCanvas value={bookUrl} size={256} includeMargin={true} />
             </div>
           </div>
         </div>
         <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-md">Close</button>
-          <button onClick={handlePrint} disabled={!bookDdcNumber} className="px-4 py-2 bg-purple-600 text-white rounded-md flex items-center gap-2 disabled:bg-purple-300">
+          <button onClick={handlePrint} className="px-4 py-2 bg-purple-600 text-white rounded-md flex items-center gap-2">
             <Printer size={18} />
             Print
           </button>

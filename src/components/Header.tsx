@@ -1,11 +1,10 @@
 import React from 'react';
 import { User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-interface HeaderProps {
-  onAdminLoginClick?: () => void;
-}
+const Header: React.FC = () => {
+  const navigate = useNavigate();
 
-const Header: React.FC<HeaderProps> = ({ onAdminLoginClick }) => {
   return (
     <header className="w-full bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -14,7 +13,7 @@ const Header: React.FC<HeaderProps> = ({ onAdminLoginClick }) => {
             Muhimmath Library
           </h1>
           <button
-            onClick={onAdminLoginClick}
+            onClick={() => navigate('/login')}
             className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200"
           >
             <User size={20} />
