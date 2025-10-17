@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
+import Select from 'react-select';
 import { supabase, type Member } from '../lib/supabase';
 
 interface MemberModalProps {
@@ -9,10 +10,28 @@ interface MemberModalProps {
 }
 
 const memberClasses = [
-    "Staff", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10",
-    "Plus One", "Plus Two", "Degree 1st Year", "Degree 2nd Year", "Degree 3rd Year",
-    "PG 1st Year", "PG 2nd Year", "Other"
+    "Staff", "BS 5", "BS 4", "BS 3A", "BS 3B", "BS 2A", "BS 2B", "BS 1A", "BS 1B", "HS 2A", "HS 2B",
+    "HS 2C", "HS 1A", "HS 2B", "HS 2C", "QURAN ACADEMY",
+    "Usthad", "Librarian", "Other"
 ];
+
+const classOptions = memberClasses.map(c => ({ value: c, label: c }));
+
+const customSelectStyles = {
+  control: (base: any) => ({
+    ...base,
+    borderColor: '#d1d5db',
+    minHeight: '42px',
+    height: '42px',
+    '&:hover': { borderColor: '#a5b4fc' },
+    boxShadow: 'none',
+  }),
+  option: (base: any, { isFocused, isSelected }: { isFocused: boolean, isSelected: boolean }) => ({
+    ...base,
+    backgroundColor: isSelected ? '#8b5cf6' : isFocused ? '#ede9fe' : undefined,
+    color: isSelected ? 'white' : 'black',
+  }),
+};
 
 const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -128,10 +147,14 @@ const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onSave }) =>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                <select value={formData.class} onChange={(e) => setFormData({ ...formData, class: e.target.value })} className="w-full px-3 py-2 border rounded-md bg-white">
-                    <option value="">Select a class</option>
-                    {memberClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <Select
+                    options={classOptions}
+                    value={classOptions.find(opt => opt.value === formData.class)}
+                    onChange={(option) => setFormData({ ...formData, class: option ? option.value : '' })}
+                    placeholder="Search and select a class..."
+                    isClearable
+                    styles={customSelectStyles}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Register Number</label>
@@ -167,10 +190,14 @@ const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onSave }) =>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                   <select value={formData.class} onChange={(e) => setFormData({ ...formData, class: e.target.value })} className="w-full px-3 py-2 border rounded-md bg-white">
-                    <option value="">Select a class</option>
-                    {memberClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                   <Select
+                        options={classOptions}
+                        value={classOptions.find(opt => opt.value === formData.class)}
+                        onChange={(option) => setFormData({ ...formData, class: option ? option.value : '' })}
+                        placeholder="Search and select a class..."
+                        isClearable
+                        styles={customSelectStyles}
+                    />
                 </div>
               </div>
               <div>

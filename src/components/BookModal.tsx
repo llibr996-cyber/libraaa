@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { supabase, type Book, type Category } from '../lib/supabase';
 
 interface BookModalProps {
@@ -43,31 +43,48 @@ const BookModal: React.FC<BookModalProps> = ({ book, categories, onClose, onSave
     }
   }, [book]);
 
+  const handleTotalCopiesChange = (newTotalCopies: number) => {
+    if (book) {
+        const issuedCount = book.total_copies - book.available_copies;
+        const newAvailableCopies = newTotalCopies - issuedCount;
+        setFormData(prev => ({
+            ...prev,
+            total_copies: newTotalCopies,
+            available_copies: Math.max(0, newAvailableCopies)
+        }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!book) return; // This modal is for editing only
     setLoading(true);
 
     try {
-      const bookData = {
-        ...formData,
-        publication_year: formData.publication_year ? parseInt(formData.publication_year) : null,
-        price: formData.price ? parseFloat(formData.price) : null,
+      const bookDataToUpdate = {
+        title: formData.title,
+        author: formData.author,
         category_id: formData.category_id || null,
+        language: formData.language,
+        price: formData.price ? parseFloat(formData.price) : null,
+        publisher: formData.publisher,
+        isbn: formData.isbn,
+        ddc_number: formData.ddc_number,
+        publication_year: formData.publication_year ? parseInt(formData.publication_year) : null,
+        total_copies: formData.total_copies,
+        available_copies: formData.available_copies,
         updated_at: new Date().toISOString()
       };
 
-      if (book) {
-        const { error } = await supabase.from('books').update(bookData).eq('id', book.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('books').insert({ ...bookData, created_at: new Date().toISOString() });
-        if (error) throw error;
-      }
-
+      const { error } = await supabase.from('books').update(bookDataToUpdate).eq('id', book.id);
+      if (error) throw error;
+      
+      alert('Book updated successfully!');
       onSave();
+
     } catch (error) {
       console.error('Error saving book:', error);
-      alert('Error saving book');
+      alert('Error saving book. Please check the console for details.');
     } finally {
       setLoading(false);
     }
@@ -129,19 +146,19 @@ const BookModal: React.FC<BookModalProps> = ({ book, categories, onClose, onSave
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Total Copies *</label>
-              <input type="number" min="1" required value={formData.total_copies} onChange={(e) => setFormData({ ...formData, total_copies: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 border rounded-md" />
+              <input type="number" min="1" required value={formData.total_copies} onChange={(e) => handleTotalCopiesChange(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border rounded-md" />
             </div>
             {book && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Available Copies *</label>
-                <input type="number" min="0" max={formData.total_copies} required value={formData.available_copies} onChange={(e) => setFormData({ ...formData, available_copies: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border rounded-md" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Available Copies</label>
+                <input type="number" value={formData.available_copies} readOnly className="w-full px-3 py-2 border rounded-md bg-gray-100 cursor-not-allowed" />
               </div>
             )}
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-md">Cancel</button>
-            <button type="submit" disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50">
-              {loading ? 'Saving...' : 'Save Book'}
+            <button type="submit" disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50 flex items-center justify-center min-w-[100px]">
+              {loading ? <Loader2 className="animate-spin" /> : 'Save Book'}
             </button>
           </div>
         </form>

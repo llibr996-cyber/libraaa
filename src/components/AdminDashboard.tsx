@@ -1,21 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { BarChart3, Bell, LogOut, Search, Plus, Edit, Trash2, Star, Folder, BookOpen, QrCode, Printer, Users, Download, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { BarChart3, Bell, LogOut, Search, Plus, Star, Folder, BookOpen, QrCode, Printer, Users, Download, Loader2, DollarSign, Edit, Trash2 } from 'lucide-react';
 import { supabase, type Book, type Circulation, type Member, type Feedback, type Category } from '../lib/supabase';
 import MemberModal from './MemberModal';
 import IssueBookModal from './IssueBookModal';
 import AddBookForm from './AddBookForm';
 import ManageCategoriesForm from './ManageCategoriesForm';
-import BookModal from './BookModal';
 import ScanQRModal from './ScanQRModal';
 import BookQRCodeModal from './BookQRCodeModal';
 import BulkQRDownloadModal from './BulkQRDownloadModal';
+import FinesPage from './FinesPage';
+import BookModal from './BookModal';
+import Pagination from './Pagination';
 
 interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-type TabType = 'Circulation' | 'Library' | 'Members' | 'Feedback' | 'History';
+type TabType = 'Circulation' | 'Library' | 'Members' | 'Fines' | 'Feedback' | 'History';
 type BookStatusFilter = 'Available' | 'Issued' | 'Overdue';
+type ColumnKey = 'title' | 'author' | 'publisher' | 'category' | 'ddc' | 'price' | 'copies';
+
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<TabType>('Circulation');
@@ -36,19 +40,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-  const [showBookModal, setShowBookModal] = useState(false);
-  const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [showScanModal, setShowScanModal] = useState(false);
   const [showBookQRModal, setShowBookQRModal] = useState(false);
   const [selectedBookForQR, setSelectedBookForQR] = useState<Book | null>(null);
   const [showBulkQRModal, setShowBulkQRModal] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
 
-
-  // History filters
+  // Filter states
   const [historySearch, setHistorySearch] = useState('');
   const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'issued' | 'returned' | 'overdue'>('all');
+  const [memberSearch, setMemberSearch] = useState('');
 
-  const tabs: TabType[] = ['Circulation', 'Library', 'Members', 'Feedback', 'History'];
+  // Book Collection Pagination
+  const [bookCurrentPage, setBookCurrentPage] = useState(1);
+  const [bookRowsPerPage, setBookRowsPerPage] = useState(10);
+
+  // Print selection state
+  const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>({
+    title: true, author: true, publisher: true, category: true, ddc: true, price: true, copies: true
+  });
+
+  const tabs: TabType[] = ['Circulation', 'Library', 'Members', 'Fines', 'Feedback', 'History'];
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -58,13 +71,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         { data: membersData },
         { data: circulationData },
         { data: feedbackData },
-        { data: categoriesData }
+        { data: categoriesData },
       ] = await Promise.all([
-        supabase.from('books').select('*, categories(name)').order('title'),
+        supabase.from('books').select('*, categories(name)').order('created_at', { ascending: false }),
         supabase.from('members').select('*').order('name'),
         supabase.from('circulation').select('*, books(*), members(*)').order('updated_at', { ascending: false }),
         supabase.from('feedback').select('*, members(name), books(title)').order('created_at', { ascending: false }),
-        supabase.from('categories').select('*').order('name')
+        supabase.from('categories').select('*').order('name'),
       ]);
 
       setBooks(booksData || []);
@@ -96,40 +109,52 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     };
   }, [fetchData]);
 
-  const handlePrint = (title: string, sectionId: string) => {
-    const printContent = document.getElementById(sectionId);
-    if (!printContent) return;
+  useEffect(() => {
+    setBookCurrentPage(1);
+  }, [bookSearch, bookRowsPerPage]);
+
+  const handlePrint = (title: string, tableId: string) => {
+    const table = document.getElementById(tableId);
+    if (!table) return;
 
     const printWindow = window.open('', '', 'height=800,width=1000');
     if (!printWindow) {
-        alert('Could not open print window. Please disable your pop-up blocker.');
-        return;
+      alert('Could not open print window. Please disable your pop-up blocker.');
+      return;
     }
 
-    printWindow.document.write(`<html><head><title>${title}</title>`);
+    // Clone the table to avoid modifying the original
+    const tableClone = table.cloneNode(true) as HTMLElement;
+
+    // Remove non-visible columns from the clone for book collection
+    if (tableId === 'book-collection-table') {
+        Object.entries(visibleColumns).forEach(([key, value]) => {
+          if (!value) {
+            tableClone.querySelectorAll(`.col-${key}`).forEach(el => {
+              (el as HTMLElement).style.display = 'none';
+            });
+          }
+        });
+    }
     
-    Array.from(document.styleSheets).forEach(styleSheet => {
-        if (styleSheet.href) {
-            printWindow.document.write(`<link rel="stylesheet" href="${styleSheet.href}">`);
-        }
+    // Remove action columns from clone
+    tableClone.querySelectorAll('.no-print-in-popup').forEach(el => {
+      (el as HTMLElement).style.display = 'none';
     });
 
+    printWindow.document.write(`<html><head><title>${title}</title>`);
     printWindow.document.write(`
         <style>
             body { padding: 2rem; font-family: sans-serif; }
             table { width: 100%; border-collapse: collapse; font-size: 12px; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
             th { background-color: #f2f2f2; }
-            .no-print-in-popup { display: none !important; }
-            @media print {
-                .no-print-in-popup { display: none !important; }
-            }
+            h1 { font-size: 24px; margin-bottom: 1rem; }
         </style>
     `);
-
     printWindow.document.write('</head><body>');
     printWindow.document.write(`<h1>${title}</h1>`);
-    printWindow.document.write(printContent.innerHTML);
+    printWindow.document.write(tableClone.outerHTML);
     printWindow.document.write('</body></html>');
     printWindow.document.close();
 
@@ -145,39 +170,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       await supabase.from('members').delete().eq('id', memberId);
     }
   };
-  
-  const handleEditBook = (book: Book) => {
-    setEditingBook(book);
-    setShowBookModal(true);
-  };
-  
-  const handleShowQR = (book: Book) => {
-    setSelectedBookForQR(book);
-    setShowBookQRModal(true);
-  };
 
   const handleDeleteBook = async (bookId: string) => {
-    const { data: circulationData, error: circulationError } = await supabase
-      .from('circulation')
-      .select('id')
-      .eq('book_id', bookId)
-      .in('status', ['issued', 'overdue']);
-
-    if (circulationError) {
-        alert('Could not verify book status. Deletion failed.');
-        return;
-    }
-    if (circulationData && circulationData.length > 0) {
-        alert('This book has copies currently issued. Return them before deleting.');
-        return;
-    }
-
     if (window.confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
         const { error } = await supabase.from('books').delete().eq('id', bookId);
         if (error) {
             alert('Error deleting book: ' + error.message);
         }
     }
+  };
+  
+  const handleShowQR = (book: Book) => {
+    setSelectedBookForQR(book);
+    setShowBookQRModal(true);
   };
 
   const handleReturnBook = async (circulationId: string) => {
@@ -212,11 +217,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   const circulationData = getCirculationData();
 
-  const filteredBooks = books.filter(book =>
-    book.title.toLowerCase().includes(bookSearch.toLowerCase()) ||
-    book.author.toLowerCase().includes(bookSearch.toLowerCase()) ||
-    book.ddc_number?.toLowerCase().includes(bookSearch.toLowerCase())
-  );
+  const filteredBooks = books.filter(book => {
+    const lowerSearch = bookSearch.toLowerCase();
+    return book.title.toLowerCase().includes(lowerSearch) ||
+    book.author.toLowerCase().includes(lowerSearch) ||
+    book.categories?.name?.toLowerCase().includes(lowerSearch) ||
+    book.ddc_number?.toLowerCase().includes(lowerSearch)
+  });
+
+  const paginatedBooks = useMemo(() => {
+    const startIndex = (bookCurrentPage - 1) * bookRowsPerPage;
+    return filteredBooks.slice(startIndex, startIndex + bookRowsPerPage);
+  }, [filteredBooks, bookCurrentPage, bookRowsPerPage]);
 
   const filteredHistory = circulation
     .filter(item => {
@@ -231,8 +243,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         const lowerSearch = historySearch.toLowerCase();
         return (
             item.books?.title.toLowerCase().includes(lowerSearch) ||
-            item.members?.name.toLowerCase().includes(lowerSearch)
+            item.members?.name.toLowerCase().includes(lowerSearch) ||
+            item.members?.class?.toLowerCase().includes(lowerSearch)
         );
+    });
+
+  const filteredMembers = members
+    .filter(member => {
+      if (!memberSearch) return true;
+      const lowerSearch = memberSearch.toLowerCase();
+      return (
+        member.name.toLowerCase().includes(lowerSearch) ||
+        member.email.toLowerCase().includes(lowerSearch) ||
+        member.register_number?.toLowerCase().includes(lowerSearch) ||
+        member.class?.toLowerCase().includes(lowerSearch)
+      );
     });
 
   const renderCirculationItem = (item: Book | Circulation) => {
@@ -265,6 +290,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       </div>
     );
   };
+  
+  const toggleColumn = (col: ColumnKey) => {
+    setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -285,9 +314,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
       <nav className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8 overflow-x-auto">
+          <div className="flex space-x-4 sm:space-x-8 overflow-x-auto">
             {tabs.map(tab => (
-              <button key={tab} onClick={() => setActiveTab(tab)} className={`py-4 px-2 border-b-2 font-medium text-sm ${activeTab === tab ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              <button key={tab} onClick={() => setActiveTab(tab)} className={`py-4 px-1 sm:px-2 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                 {tab}
               </button>
             ))}
@@ -344,51 +373,83 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <Download size={16} />
                       Bulk Download QRs
                     </button>
-                    <button onClick={() => handlePrint('Book Collection', 'book-collection-printable')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+                    <button onClick={() => handlePrint('Book Collection', 'book-collection-table')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
                       <Printer size={16} /> Print List
                     </button>
                   </div>
                 </div>
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input type="text" placeholder="Search books by title, author, DDC..." value={bookSearch} onChange={(e) => setBookSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"/>
+                  <input type="text" placeholder="Search by title, author, category, DDC..." value={bookSearch} onChange={(e) => setBookSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"/>
                 </div>
-                <div id="book-collection-printable">
-                  <div className="overflow-x-auto max-h-[500px]">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50 sticky top-0">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sl. No.</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Author</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">DDC</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Copies</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase no-print-in-popup">Actions</th>
+                <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="book-rows-per-page" className="text-sm text-gray-600">Rows per page:</label>
+                        <select 
+                            id="book-rows-per-page"
+                            value={bookRowsPerPage}
+                            onChange={e => setBookRowsPerPage(Number(e.target.value))}
+                            className="px-2 py-1 border border-gray-300 rounded-md bg-white text-sm focus:ring-1 focus:ring-purple-400"
+                        >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                        </select>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg border">
+                        <p className="text-sm font-medium mb-2">Toggle columns for printing:</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2">
+                            {Object.keys(visibleColumns).map(key => (
+                                <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <input type="checkbox" checked={visibleColumns[key as ColumnKey]} onChange={() => toggleColumn(key as ColumnKey)} className="rounded text-purple-600 focus:ring-purple-500" />
+                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table id="book-collection-table" className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-title ${!visibleColumns.title && 'hidden'}`}>Title</th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-author ${!visibleColumns.author && 'hidden'}`}>Author</th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-publisher ${!visibleColumns.publisher && 'hidden'}`}>Publisher</th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-category ${!visibleColumns.category && 'hidden'}`}>Category</th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-ddc ${!visibleColumns.ddc && 'hidden'}`}>DDC</th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-price ${!visibleColumns.price && 'hidden'}`}>Price</th>
+                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-copies ${!visibleColumns.copies && 'hidden'}`}>Copies</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase no-print-in-popup">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedBooks.map((book) => (
+                        <tr key={book.id}>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 col-title ${!visibleColumns.title && 'hidden'}`}>{book.title}</td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-author ${!visibleColumns.author && 'hidden'}`}>{book.author}</td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-publisher ${!visibleColumns.publisher && 'hidden'}`}>{book.publisher || 'N/A'}</td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-category ${!visibleColumns.category && 'hidden'}`}>{book.categories?.name || 'N/A'}</td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-ddc ${!visibleColumns.ddc && 'hidden'}`}>{book.ddc_number || 'N/A'}</td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-price ${!visibleColumns.price && 'hidden'}`}>{book.price ? `₹${book.price.toFixed(2)}` : 'N/A'}</td>
+                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-copies ${!visibleColumns.copies && 'hidden'}`}>{book.available_copies} / {book.total_copies}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium no-print-in-popup">
+                            <div className="flex items-center gap-4">
+                              <button onClick={() => { setEditingBook(book); setShowBookModal(true); }} className="text-purple-600 hover:text-purple-900" title="Edit Book"><Edit size={18} /></button>
+                              <button onClick={() => handleDeleteBook(book.id)} className="text-red-600 hover:text-red-900" title="Delete Book"><Trash2 size={18} /></button>
+                              <button onClick={() => handleShowQR(book)} disabled={!book.ddc_number} className="text-gray-500 hover:text-purple-600 disabled:text-gray-300 disabled:cursor-not-allowed" title="Show QR Code"><QrCode size={18} /></button>
+                            </div>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredBooks.map((book, index) => (
-                          <tr key={book.id}>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{book.title}</td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{book.author}</td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{book.categories?.name || 'N/A'}</td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{book.ddc_number || 'N/A'}</td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{book.available_copies} / {book.total_copies}</td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium no-print-in-popup">
-                              <div className="flex gap-4">
-                                <button onClick={() => handleShowQR(book)} disabled={!book.ddc_number} className="text-gray-500 hover:text-purple-600 disabled:text-gray-300 disabled:cursor-not-allowed"><QrCode size={18} /></button>
-                                <button onClick={() => handleEditBook(book)} className="text-purple-600 hover:text-purple-900"><Edit size={18} /></button>
-                                <button onClick={() => handleDeleteBook(book.id)} className="text-red-600 hover:text-red-900"><Trash2 size={18} /></button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                <Pagination 
+                    currentPage={bookCurrentPage}
+                    totalCount={filteredBooks.length}
+                    pageSize={bookRowsPerPage}
+                    onPageChange={page => setBookCurrentPage(page)}
+                />
               </div>
             </div>
             <div className="lg:col-span-2">
@@ -399,7 +460,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
         {activeTab === 'Members' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h2 className="text-2xl font-bold">Library Members</h2>
               <div className="flex gap-2">
                 <button onClick={() => handlePrint('Library Members', 'member-list-printable')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
@@ -409,17 +470,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
               </div>
             </div>
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              {loading ? <p>Loading...</p> : members.length > 0 ? (
-                <div className="space-y-4">
-                  {members.map(member => (
-                    <div key={member.id} className="border rounded-lg p-4 flex justify-between items-start">
-                      <div><h3 className="font-semibold">{member.name}</h3><p>{member.email}</p></div>
-                      <div className="flex gap-2 no-print-in-popup">
-                        <button onClick={() => { setEditingMember(member); setShowMemberModal(true); }}><Edit size={18} /></button>
-                        <button onClick={() => handleDeleteMember(member.id)}><Trash2 size={18} /></button>
-                      </div>
-                    </div>
-                  ))}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <input 
+                    type="text" 
+                    placeholder="Search by name, email, register no, or class..." 
+                    value={memberSearch} 
+                    onChange={(e) => setMemberSearch(e.target.value)} 
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+              
+              {loading ? <p>Loading...</p> : filteredMembers.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sl. No.</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Register No.</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase no-print-in-popup">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredMembers.map((member, index) => (
+                        <tr key={member.id}>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{member.name}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{member.register_number || 'N/A'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{member.class || 'N/A'}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium no-print-in-popup">
+                            <div className="flex gap-4">
+                              <button onClick={() => { setEditingMember(member); setShowMemberModal(true); }} className="text-purple-600 hover:text-purple-900"><Edit size={18} /></button>
+                              <button onClick={() => handleDeleteMember(member.id)} className="text-red-600 hover:text-red-900"><Trash2 size={18} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : <div className="text-center py-10"><Users size={40} className="mx-auto text-gray-300" /><p className="mt-2 text-gray-500">No members found.</p></div>}
             </div>
@@ -437,7 +529,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {members.map((member, index) => (
+                        {filteredMembers.map((member, index) => (
                             <tr key={member.id}>
                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
                                 <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{member.name}</td>
@@ -453,6 +545,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             </div>
           </div>
         )}
+
+        {activeTab === 'Fines' && <FinesPage />}
 
         {activeTab === 'Feedback' && (
           <div className="space-y-6">
@@ -498,67 +592,65 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Circulation History</h2>
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                <div className="relative w-full md:w-1/2">
+              <div className="grid grid-cols-1 md:grid-cols-2 items-center mb-4 gap-4">
+                <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input 
                     type="text" 
-                    placeholder="Search by book title or member name..." 
+                    placeholder="Search by book, member, or class..." 
                     value={historySearch} 
                     onChange={(e) => setHistorySearch(e.target.value)} 
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <div className="flex flex-col sm:flex-row items-center gap-4 justify-self-start md:justify-self-end w-full">
+                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
                     {(['all', 'issued', 'returned', 'overdue'] as const).map(filter => (
                       <button 
                         key={filter} 
                         onClick={() => setHistoryStatusFilter(filter)} 
-                        className={`px-3 py-1 text-sm font-medium rounded-md transition-colors capitalize ${historyStatusFilter === filter ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-3 py-1 text-sm font-medium rounded-md transition-colors capitalize w-full text-center ${historyStatusFilter === filter ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
                       >
                         {filter}
                       </button>
                     ))}
                   </div>
-                  <button onClick={() => handlePrint('Circulation History', 'history-printable')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+                  <button onClick={() => handlePrint('Circulation History', 'history-printable')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm w-full sm:w-auto justify-center">
                     <Printer size={16} /> Print
                   </button>
                 </div>
               </div>
-              <div id="history-printable">
+              <div id="history-printable" className="overflow-x-auto">
                 {loading ? <p>Loading...</p> : filteredHistory.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Book Title</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Member</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Issued Date</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Return Date</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fine</th>
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Book Title</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Member</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Issued Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Return Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fine</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredHistory.map(item => (
+                        <tr key={item.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.books?.title || 'N/A'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.members?.name || 'N/A'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.members?.class || 'N/A'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.status === 'returned' ? 'bg-green-100 text-green-800' : new Date(item.due_date) < new Date() && item.status === 'issued' ? 'bg-red-100 text-red-800' : item.status === 'issued' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{new Date(item.due_date) < new Date() && item.status === 'issued' ? 'overdue' : item.status}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(item.issue_date).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.return_date ? new Date(item.return_date).toLocaleDateString() : '—'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{item.fine_amount?.toFixed(2) || '0.00'}</td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredHistory.map(item => (
-                          <tr key={item.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.books?.title || 'N/A'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.members?.name || 'N/A'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.members?.class || 'N/A'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.status === 'returned' ? 'bg-green-100 text-green-800' : new Date(item.due_date) < new Date() && item.status === 'issued' ? 'bg-red-100 text-red-800' : item.status === 'issued' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{new Date(item.due_date) < new Date() && item.status === 'issued' ? 'overdue' : item.status}</span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(item.issue_date).toLocaleDateString()}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.return_date ? new Date(item.return_date).toLocaleDateString() : '—'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{item.fine_amount?.toFixed(2) || '0.00'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : <div className="text-center py-10"><Folder size={40} className="mx-auto text-gray-300" /><p className="mt-2 text-gray-500">No circulation history found.</p></div>}
+                      ))}
+                    </tbody>
+                  </table>
+                ) : <div className="text-center py-10"><Folder size={40} className="mx-auto text-gray-300" /><p className="mt-2 text-gray-500">No circulation history found for the selected criteria.</p></div>}
               </div>
             </div>
           </div>
@@ -567,10 +659,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
       {showMemberModal && <MemberModal member={editingMember} onClose={() => { setShowMemberModal(false); setEditingMember(null); }} onSave={() => { setShowMemberModal(false); setEditingMember(null); }} />}
       {showIssueModal && <IssueBookModal onClose={() => setShowIssueModal(false)} onSave={() => setShowIssueModal(false)} />}
-      {showBookModal && <BookModal book={editingBook} categories={categories} onClose={() => { setShowBookModal(false); setEditingBook(null); }} onSave={() => { setShowBookModal(false); setEditingBook(null); }} />}
       {showScanModal && <ScanQRModal onClose={() => setShowScanModal(false)} onSuccess={fetchData} />}
       {showBookQRModal && selectedBookForQR && <BookQRCodeModal bookDdcNumber={selectedBookForQR.ddc_number} bookTitle={selectedBookForQR.title} onClose={() => setShowBookQRModal(false)} />}
       {showBulkQRModal && <BulkQRDownloadModal onClose={() => setShowBulkQRModal(false)} />}
+      {showBookModal && <BookModal book={editingBook} categories={categories} onClose={() => { setShowBookModal(false); setEditingBook(null); }} onSave={() => { setShowBookModal(false); setEditingBook(null); }} />}
     </div>
   );
 };

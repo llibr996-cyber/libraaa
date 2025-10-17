@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Menu, X, Facebook, Twitter, Instagram } from 'lucide-react';
 import { supabase, type Book } from '../lib/supabase';
+import WebsiteQRCode from './WebsiteQRCode';
 
 interface LandingPageProps {
   onNavigate: (view: 'home' | 'login') => void;
@@ -167,10 +168,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           </div>
         </motion.section>
 
+        {/* QR Code Access Section */}
+        <motion.section
+          id="access"
+          className="py-20 bg-neutral-50"
+          variants={sectionVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+            <WebsiteQRCode />
+          </div>
+        </motion.section>
+
         {/* Contact Us Section */}
         <motion.section
           id="contact"
-          className="py-20 bg-neutral-50"
+          className="py-20"
           variants={sectionVariants}
           initial="hidden"
           whileInView="visible"

@@ -22,7 +22,7 @@ const BulkQRDownloadModal: React.FC<BulkQRDownloadModalProps> = ({ onClose }) =>
         .from('books')
         .select('id, title, ddc_number')
         .not('ddc_number', 'is', null)
-        .order('title');
+        .order('created_at', { ascending: false });
       
       if (data) setBooks(data);
       setLoading(false);
