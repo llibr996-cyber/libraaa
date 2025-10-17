@@ -140,7 +140,7 @@ const BulkQRDownloadModal: React.FC<BulkQRDownloadModalProps> = ({ onClose }) =>
             <div key={pageIndex} className="a4-page">
               {page.map(book => (
                 <div key={book.id} className="qr-item">
-                  <QRCodeCanvas value={`https://ssfmuhimmathlibrary.netlify.app/book/${book.id}`} size={128} />
+                  <QRCodeCanvas value={book.ddc_number || book.id} size={128} />
                   <p className="qr-item-title">{book.title}</p>
                   <p className="qr-item-ddc">{book.ddc_number || book.id.substring(0, 8)}</p>
                 </div>

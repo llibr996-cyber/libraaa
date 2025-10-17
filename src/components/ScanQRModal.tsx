@@ -17,7 +17,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
   const [actionType, setActionType] = useState<ActionType>('issue');
   const [scannedBook, setScannedBook] = useState<Book | null>(null);
   const [selectedMember, setSelectedMember] = useState<any>(null);
-  const [manualDdc, setManualDdc] = useState('');
+  const [manualIdentifier, setManualIdentifier] = useState('');
   const [message, setMessage] = useState<{ type: 'info' | 'error' | 'success'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   
@@ -79,12 +79,52 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
 
   }, [scanMode, scannedBook]);
 
+  const processScannedText = async (text: string) => {
+    let book: Book | null = null;
+    let error: any = null;
+    const urlPrefix = 'https://ssfmuhimmathlibrary.netlify.app/book/';
+
+    if (text.startsWith(urlPrefix)) {
+        const bookId = text.substring(urlPrefix.length);
+        if (bookId) {
+            const { data, error: queryError } = await supabase.from('books').select('*').eq('id', bookId).single();
+            book = data;
+            error = queryError;
+        }
+    } else {
+        // Try to find by DDC or ID
+        const { data, error: queryError } = await supabase
+            .from('books')
+            .select('*')
+            .or(`ddc_number.eq.${text},id.eq.${text}`)
+            .limit(1);
+
+        if (data && data.length > 0) {
+            book = data[0];
+        }
+        error = queryError;
+    }
+
+    if (!isMounted.current) return;
+
+    if (error || !book) {
+        setMessage({ type: 'error', text: 'Book not found. Please try again.' });
+        setScannedBook(null);
+        setTimeout(() => {
+            if (isMounted.current) setMessage(null);
+        }, 3000);
+    } else {
+        setScannedBook(book);
+        setMessage({ type: 'info', text: `Book found: ${book.title}` });
+    }
+  };
+
   const handleScanSuccess = (decodedText: string) => {
     if (loading) return;
     setLoading(true);
     setMessage({ type: 'info', text: 'QR code detected. Verifying book...' });
     
-    processBookDdc(decodedText).finally(() => {
+    processScannedText(decodedText).finally(() => {
         if (isMounted.current) setLoading(false);
     });
   };
@@ -93,28 +133,11 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
     // This callback is often noisy, so we'll keep it quiet.
   };
 
-  const processBookDdc = async (ddc: string) => {
-    const { data: book, error } = await supabase.from('books').select('*').eq('ddc_number', ddc).single();
-    
-    if (!isMounted.current) return;
-
-    if (error || !book) {
-      setMessage({ type: 'error', text: 'Book not found. Please try again.' });
-      setScannedBook(null);
-      setTimeout(() => {
-        if (isMounted.current) setMessage(null);
-      }, 3000);
-    } else {
-      setScannedBook(book);
-      setMessage({ type: 'info', text: `Book found: ${book.title}` });
-    }
-  };
-
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualDdc) return;
+    if (!manualIdentifier) return;
     setLoading(true);
-    await processBookDdc(manualDdc);
+    await processScannedText(manualIdentifier);
     setLoading(false);
   };
 
@@ -155,7 +178,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
   const resetState = () => {
     setScannedBook(null);
     setSelectedMember(null);
-    setManualDdc('');
+    setManualIdentifier('');
     setMessage(null);
   };
 
@@ -178,7 +201,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
                 <div id={scannerRegionId} className="w-full h-64 border rounded-lg bg-gray-900"></div>
               ) : (
                 <form onSubmit={handleManualSubmit} className="space-y-3">
-                  <input type="text" value={manualDdc} onChange={e => setManualDdc(e.target.value)} placeholder="Enter Book DDC Number" className="w-full px-3 py-2 border rounded-md" />
+                  <input type="text" value={manualIdentifier} onChange={e => setManualIdentifier(e.target.value)} placeholder="Enter Book DDC or ID" className="w-full px-3 py-2 border rounded-md" />
                   <button type="submit" disabled={loading} className="w-full px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50 flex items-center justify-center">
                     {loading ? <Loader2 className="animate-spin" /> : 'Find Book'}
                   </button>
