@@ -42,7 +42,7 @@ const LibraryCollection: React.FC = () => {
       { data: circulationData },
       { data: categoriesData }
     ] = await Promise.all([
-      supabase.from('books').select('*, categories(name)').order('created_at', { ascending: false }),
+      supabase.from('books').select('*, categories(name)').order('created_at', { ascending: false }).limit(10000),
       supabase.from('circulation').select('book_id, members(name)').eq('status', 'issued'),
       supabase.from('categories').select('id, name').order('name')
     ]);

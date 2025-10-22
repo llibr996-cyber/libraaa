@@ -9,7 +9,7 @@ interface BookQRCodeModalProps {
 }
 
 const BookQRCodeModal: React.FC<BookQRCodeModalProps> = ({ book, onClose }) => {
-  const qrValue = book.ddc_number || book.id;
+  const qrValue = `${window.location.origin}/book/${book.id}`;
 
   const handlePrint = () => {
     const printContent = document.getElementById('qr-print-area');
@@ -42,7 +42,7 @@ const BookQRCodeModal: React.FC<BookQRCodeModalProps> = ({ book, onClose }) => {
         <div className="p-6 text-center">
           <div id="qr-print-area">
             <h3 className="text-lg font-medium text-gray-800 mb-2">{book.title}</h3>
-            <p className="text-sm text-gray-500 mb-4">{book.ddc_number ? 'DDC' : 'Book ID'}: {qrValue}</p>
+            <p className="text-sm text-gray-500 mb-4">DDC: {book.ddc_number || 'N/A'}</p>
             <div className="flex justify-center">
               <QRCodeCanvas value={qrValue} size={256} includeMargin={true} />
             </div>

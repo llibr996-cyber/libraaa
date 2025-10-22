@@ -7,6 +7,8 @@ import AdminDashboard from './components/AdminDashboard';
 import HomePage from './components/HomePage';
 import LandingPage from './components/LandingPage';
 import BookDetailPage from './components/BookDetailPage';
+import ReadWithUsPage from './components/ReadWithUsPage';
+import PostDetailPage from './components/PostDetailPage';
 
 const ProtectedRoute = ({ session, children }: { session: Session | null, children: JSX.Element }) => {
   if (!session) {
@@ -51,6 +53,8 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/book/:bookId" element={<BookDetailPage />} />
+      <Route path="/read-with-us" element={<ReadWithUsPage />} />
+      <Route path="/read-with-us/:postId" element={<PostDetailPage />} />
       <Route path="/login" element={session ? <Navigate to="/admin" /> : <LoginForm />} />
       <Route
         path="/admin"

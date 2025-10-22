@@ -2,7 +2,7 @@ import React from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 
 const WebsiteQRCode: React.FC = () => {
-  const url = 'https://ssfmuhimmathlibrary.netlify.app/';
+  const url = 'https://muhimmathlibrary.netlify.app/';
 
   return (
     <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200 flex flex-col items-center justify-center text-center">

@@ -3,6 +3,7 @@ import { X, QrCode, Type, AlertTriangle, CheckCircle, Loader2 } from 'lucide-rea
 import { Html5Qrcode } from 'html5-qrcode';
 import { supabase, type Book } from '../lib/supabase';
 import SearchableSelect from './SearchableSelect';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface ScanQRModalProps {
   onClose: () => void;
@@ -18,6 +19,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
   const [scannedBook, setScannedBook] = useState<Book | null>(null);
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [manualIdentifier, setManualIdentifier] = useState('');
+  const debouncedManualIdentifier = useDebounce(manualIdentifier, 500);
   const [message, setMessage] = useState<{ type: 'info' | 'error' | 'success'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   
@@ -82,7 +84,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
   const processScannedText = async (text: string) => {
     let book: Book | null = null;
     let error: any = null;
-    const urlPrefix = 'https://ssfmuhimmathlibrary.netlify.app/book/';
+    const urlPrefix = `${window.location.origin}/book/`;
 
     if (text.startsWith(urlPrefix)) {
         const bookId = text.substring(urlPrefix.length);
@@ -92,7 +94,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
             error = queryError;
         }
     } else {
-        // Try to find by DDC or ID
+        // Try to find by DDC or ID (fallback for old QR codes)
         const { data, error: queryError } = await supabase
             .from('books')
             .select('*')
@@ -119,6 +121,16 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
     }
   };
 
+  useEffect(() => {
+    if (debouncedManualIdentifier && scanMode === 'manual' && !scannedBook) {
+        setLoading(true);
+        setMessage({ type: 'info', text: 'Searching for book...' });
+        processScannedText(debouncedManualIdentifier).finally(() => {
+            if (isMounted.current) setLoading(false);
+        });
+    }
+  }, [debouncedManualIdentifier, scanMode]);
+
   const handleScanSuccess = (decodedText: string) => {
     if (loading) return;
     setLoading(true);
@@ -131,14 +143,6 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
 
   const handleScanError = (errorMessage: string) => {
     // This callback is often noisy, so we'll keep it quiet.
-  };
-
-  const handleManualSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualIdentifier) return;
-    setLoading(true);
-    await processScannedText(manualIdentifier);
-    setLoading(false);
   };
 
   const handleFinalAction = async () => {
@@ -200,12 +204,41 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
               {scanMode === 'scan' ? (
                 <div id={scannerRegionId} className="w-full h-64 border rounded-lg bg-gray-900"></div>
               ) : (
-                <form onSubmit={handleManualSubmit} className="space-y-3">
-                  <input type="text" value={manualIdentifier} onChange={e => setManualIdentifier(e.target.value)} placeholder="Enter Book DDC or ID" className="w-full px-3 py-2 border rounded-md" />
-                  <button type="submit" disabled={loading} className="w-full px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50 flex items-center justify-center">
-                    {loading ? <Loader2 className="animate-spin" /> : 'Find Book'}
-                  </button>
-                </form>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Enter Book DDC or ID (auto-searches)</label>
+                    <input
+                      type="text"
+                      value={manualIdentifier}
+                      onChange={e => setManualIdentifier(e.target.value)}
+                      placeholder="e.g., 813.6 or book ID"
+                      className="w-full px-3 py-2 border rounded-md"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="relative flex items-center">
+                    <div className="flex-grow border-t border-gray-300"></div>
+                    <span className="flex-shrink mx-4 text-gray-500 text-sm">OR</span>
+                    <div className="flex-grow border-t border-gray-300"></div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Search and Select Book</label>
+                    <SearchableSelect
+                      value={null}
+                      onChange={(option: any) => {
+                        if (option) {
+                          setManualIdentifier('');
+                          setScannedBook(option.data);
+                          setMessage({ type: 'info', text: `Book found: ${option.label}` });
+                        }
+                      }}
+                      placeholder="Type to search by title, author, DDC..."
+                      tableName="books"
+                      labelField="title"
+                      searchFields={['title', 'author', 'ddc_number']}
+                    />
+                  </div>
+                </div>
               )}
             </>
           ) : (
@@ -221,7 +254,7 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
               {actionType === 'issue' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Select Member *</label>
-                  <SearchableSelect value={selectedMember} onChange={setSelectedMember} placeholder="Search for a member..." tableName="members" labelField="name" searchFields={['name', 'email']} required />
+                  <SearchableSelect value={selectedMember} onChange={setSelectedMember} placeholder="Search for a member..." tableName="members" labelField="name" searchFields={['name', 'email', 'register_number']} required />
                 </div>
               )}
               <div className="flex justify-end gap-3 pt-4">

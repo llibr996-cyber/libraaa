@@ -81,3 +81,13 @@ export interface Feedback {
   members?: Member;
   books?: Book;
 }
+
+export interface ReadWithUs {
+  id: string;
+  created_at: string;
+  title: string;
+  author: string;
+  content: string;
+  category: 'Book Review' | 'Poem' | 'Article' | 'Story';
+  user_id?: string | null;
+}

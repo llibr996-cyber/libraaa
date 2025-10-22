@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Menu, X, Facebook, Twitter, Instagram } from 'lucide-react';
 import { supabase, type Book } from '../lib/supabase';
 import WebsiteQRCode from './WebsiteQRCode';
+import ReadWithUsSection from './ReadWithUsSection';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const LandingPage: React.FC = () => {
     { name: 'Home', href: '#home' },
     { name: 'About', href: '#about' },
     { name: 'Collection', href: '#collection' },
+    { name: 'Read With Us', href: '#read-with-us' },
     { name: 'Contact', href: '#contact' },
   ];
 
@@ -82,7 +84,7 @@ const LandingPage: React.FC = () => {
 
       <main>
         {/* Hero Section */}
-        <section id="home" className="relative h-screen flex items-center justify-center text-white">
+        <section id="home" className="relative min-h-screen flex items-center justify-center text-white">
           <div className="absolute inset-0 bg-black opacity-50"></div>
           <div
             className="absolute inset-0 bg-cover bg-center"
@@ -94,10 +96,10 @@ const LandingPage: React.FC = () => {
             transition={{ duration: 0.8 }}
             className="relative z-10 text-center px-4"
           >
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight drop-shadow-lg">MUHIMMATH LIBRARY</h1>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-lg">MUHIMMATH LIBRARY</h1>
             <p className="mt-4 text-lg md:text-xl max-w-2xl mx-auto drop-shadow">Where every book is a new adventure</p>
             <button onClick={() => navigate('/home')} className="mt-8 bg-primary text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-primary-dark transition-transform hover:scale-105 shadow-lg">
-              Get Started
+              Explore Collection
             </button>
           </motion.div>
         </section>
@@ -105,7 +107,7 @@ const LandingPage: React.FC = () => {
         {/* About Us Section */}
         <motion.section
           id="about"
-          className="py-20 bg-neutral-50"
+          className="py-16 lg:py-20 bg-neutral-50"
           variants={sectionVariants}
           initial="hidden"
           whileInView="visible"
@@ -132,7 +134,7 @@ const LandingPage: React.FC = () => {
         {/* Our Collection Section */}
         <motion.section
           id="collection"
-          className="py-20"
+          className="py-16 lg:py-20"
           variants={sectionVariants}
           initial="hidden"
           whileInView="visible"
@@ -144,7 +146,7 @@ const LandingPage: React.FC = () => {
               <div className="flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>
             ) : (
               <motion.div
-                className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12"
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 mb-12"
                 variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
               >
                 {collection.map(book => (
@@ -166,10 +168,13 @@ const LandingPage: React.FC = () => {
           </div>
         </motion.section>
 
+        {/* Read With Us Section */}
+        <ReadWithUsSection />
+
         {/* QR Code Access Section */}
         <motion.section
           id="access"
-          className="py-20 bg-neutral-50"
+          className="py-16 lg:py-20 bg-neutral-50"
           variants={sectionVariants}
           initial="hidden"
           whileInView="visible"
@@ -183,7 +188,7 @@ const LandingPage: React.FC = () => {
         {/* Contact Us Section */}
         <motion.section
           id="contact"
-          className="py-20"
+          className="py-16 lg:py-20"
           variants={sectionVariants}
           initial="hidden"
           whileInView="visible"

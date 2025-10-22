@@ -44,7 +44,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-medium text-purple-600 hover:text-purple-800 mb-6">
             <ArrowLeft size={16} /> Back to Landing Page
         </button>

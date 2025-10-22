@@ -1,0 +1,9 @@
+# This rule tells Netlify how to handle routing for a Single-Page Application (SPA).
+# It rewrites all paths to the index.html file, so that client-side routing (React Router)
+# can take over and display the correct page. The status code 200 is important as it
+# preserves the original URL in the browser's address bar.
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

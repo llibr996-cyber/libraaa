@@ -21,7 +21,8 @@ const BulkQRDownloadModal: React.FC<BulkQRDownloadModalProps> = ({ onClose }) =>
       const { data } = await supabase
         .from('books')
         .select('id, title, ddc_number')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10000);
       
       if (data) setBooks(data);
       setLoading(false);
@@ -140,9 +141,9 @@ const BulkQRDownloadModal: React.FC<BulkQRDownloadModalProps> = ({ onClose }) =>
             <div key={pageIndex} className="a4-page">
               {page.map(book => (
                 <div key={book.id} className="qr-item">
-                  <QRCodeCanvas value={book.ddc_number || book.id} size={128} />
+                  <QRCodeCanvas value={`${window.location.origin}/book/${book.id}`} size={128} />
                   <p className="qr-item-title">{book.title}</p>
-                  <p className="qr-item-ddc">{book.ddc_number || book.id.substring(0, 8)}</p>
+                  <p className="qr-item-ddc">{book.ddc_number || 'N/A'}</p>
                 </div>
               ))}
             </div>

@@ -75,7 +75,7 @@ const BookDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Link to="/home" className="flex items-center gap-2 text-sm font-medium text-purple-600 hover:text-purple-800 mb-6">
           <ArrowLeft size={16} /> Back to Collection
         </Link>
@@ -89,7 +89,7 @@ const BookDetailPage: React.FC = () => {
                 </div>
               </div>
               <div className="w-full md:w-2/3">
-                <h1 className="text-3xl font-bold text-gray-900 leading-tight">{book.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">{book.title}</h1>
                 <p className="text-xl font-medium text-gray-500 mt-1">by {book.author}</p>
                 
                 <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">

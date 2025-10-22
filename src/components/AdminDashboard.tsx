@@ -1,22 +1,38 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Bell, LogOut, Search, Plus, Star, Folder, BookOpen, QrCode, Printer, Users, Download, Loader2, DollarSign, Edit, Trash2 } from 'lucide-react';
+import { BarChart3, Bell, LogOut, Search, Plus, Star, Folder, BookOpen, QrCode, Printer, Users, Download, DollarSign, Edit, Trash2, X, BookHeart } from 'lucide-react';
 import { supabase, type Book, type Circulation, type Member, type Feedback, type Category } from '../lib/supabase';
 import MemberModal from './MemberModal';
 import IssueBookModal from './IssueBookModal';
 import AddBookForm from './AddBookForm';
-import ManageCategoriesForm from './ManageCategoriesForm';
+import CategoryManager from './CategoryManager';
 import ScanQRModal from './ScanQRModal';
 import BookQRCodeModal from './BookQRCodeModal';
 import BulkQRDownloadModal from './BulkQRDownloadModal';
 import FinesPage from './FinesPage';
 import BookModal from './BookModal';
 import Pagination from './Pagination';
+import ReadWithUsManager from './ReadWithUsManager';
 
-type TabType = 'Circulation' | 'Library' | 'Members' | 'Fines' | 'Feedback' | 'History';
+type TabType = 'Circulation' | 'Book Collection' | 'Members' | 'Fines' | 'Feedback' | 'History' | 'Read With Us';
 type BookStatusFilter = 'Available' | 'Issued' | 'Overdue';
 type ColumnKey = 'title' | 'author' | 'publisher' | 'category' | 'ddc' | 'price' | 'copies';
 
+const AddBookModal = ({ categories, onSave, onClose }: { categories: Category[], onSave: () => void, onClose: () => void }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+      <div className="flex justify-between items-center p-5 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-gray-800">Add New Book</h2>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <X size={24} />
+        </button>
+      </div>
+      <div className="flex-grow overflow-y-auto p-6">
+        <AddBookForm categories={categories} onSave={() => { onSave(); onClose(); }} />
+      </div>
+    </div>
+  </div>
+);
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -44,6 +60,8 @@ const AdminDashboard: React.FC = () => {
   const [showBulkQRModal, setShowBulkQRModal] = useState(false);
   const [showBookModal, setShowBookModal] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [showAddBookModal, setShowAddBookModal] = useState(false);
+  const [showManageCategoriesModal, setShowManageCategoriesModal] = useState(false);
 
   // Filter states
   const [historySearch, setHistorySearch] = useState('');
@@ -52,14 +70,14 @@ const AdminDashboard: React.FC = () => {
 
   // Book Collection Pagination
   const [bookCurrentPage, setBookCurrentPage] = useState(1);
-  const [bookRowsPerPage, setBookRowsPerPage] = useState(10);
+  const [bookRowsPerPage, setBookRowsPerPage] = useState(50);
 
   // Print selection state
   const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>({
     title: true, author: true, publisher: true, category: true, ddc: true, price: true, copies: true
   });
 
-  const tabs: TabType[] = ['Circulation', 'Library', 'Members', 'Fines', 'Feedback', 'History'];
+  const tabs: TabType[] = ['Circulation', 'Book Collection', 'Members', 'Fines', 'Feedback', 'History', 'Read With Us'];
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -76,7 +94,7 @@ const AdminDashboard: React.FC = () => {
         { data: feedbackData },
         { data: categoriesData },
       ] = await Promise.all([
-        supabase.from('books').select('*, categories(name)').order('created_at', { ascending: false }),
+        supabase.from('books').select('*, categories(name)').order('created_at', { ascending: false }).limit(10000),
         supabase.from('members').select('*').order('name'),
         supabase.from('circulation').select('*, books(*), members(*)').order('updated_at', { ascending: false }),
         supabase.from('feedback').select('*, members(name), books(title)').order('created_at', { ascending: false }),
@@ -267,11 +285,13 @@ const AdminDashboard: React.FC = () => {
     if (activeFilter === 'Available') {
       const book = item as Book;
       return (
-        <div key={book.id} className="border rounded-lg p-4">
-          <div>
-            <h3 className="font-semibold">{book.title}</h3>
-            <p>by {book.author}</p>
-            <p>Available: {book.available_copies}</p>
+        <div key={book.id} className="border rounded-lg p-4 bg-white shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <div>
+              <h3 className="font-semibold text-gray-800">{book.title}</h3>
+              <p className="text-sm text-gray-600">by {book.author}</p>
+              <p className="text-sm text-gray-500">Available: <span className="font-medium text-green-600">{book.available_copies}</span></p>
+            </div>
           </div>
         </div>
       );
@@ -279,14 +299,19 @@ const AdminDashboard: React.FC = () => {
     
     const circ = item as Circulation;
     return (
-      <div key={circ.id} className="border rounded-lg p-4">
-        <div className="flex justify-between items-center">
+      <div key={circ.id} className="border rounded-lg p-4 bg-white shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
-            <h3 className="font-semibold">{circ.books?.title}</h3>
-            <p>by {circ.members?.name}</p>
-            <p>Due: {new Date(circ.due_date).toLocaleDateString()}</p>
+            <h3 className="font-semibold text-gray-800">{circ.books?.title}</h3>
+            <p className="text-sm text-gray-600">by <span className="font-medium">{circ.members?.name}</span></p>
+            <p className={`text-sm ${new Date(circ.due_date) < new Date() ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+              Due: {new Date(circ.due_date).toLocaleDateString()}
+            </p>
           </div>
-          <button onClick={() => handleReturnBook(circ.id)} className="bg-green-600 text-white px-3 py-1 rounded text-sm">
+          <button 
+            onClick={() => handleReturnBook(circ.id)} 
+            className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors self-start sm:self-auto"
+          >
             Return
           </button>
         </div>
@@ -316,8 +341,8 @@ const AdminDashboard: React.FC = () => {
       </header>
 
       <nav className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-4 sm:space-x-8 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex space-x-2 sm:space-x-8 overflow-x-auto">
             {tabs.map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={`py-4 px-1 sm:px-2 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                 {tab}
@@ -327,7 +352,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {activeTab === 'Circulation' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-4">
@@ -352,7 +377,7 @@ const AdminDashboard: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input type="text" placeholder="Search books, members..." value={circulationSearch} onChange={(e) => setCirculationSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg"/>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6 min-h-[400px]">
+            <div className="bg-gray-100 rounded-lg p-4 sm:p-6 min-h-[400px]">
               {loading ? <p>Loading...</p> : (
                 <div className="space-y-4">
                   {circulationData.map(renderCirculationItem)}
@@ -362,101 +387,103 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'Library' && (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            <div className="lg:col-span-3">
-              <AddBookForm categories={categories} onSave={fetchData} />
-              <div className="mt-8 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <BookOpen size={22} /> Book Collection
-                  </h3>
-                  <div className="flex gap-2 flex-wrap">
-                    <button onClick={() => setShowBulkQRModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
-                      <Download size={16} />
-                      Bulk Download QRs
-                    </button>
-                    <button onClick={() => handlePrint('Book Collection', 'book-collection-table')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
-                      <Printer size={16} /> Print List
-                    </button>
-                  </div>
+        {activeTab === 'Book Collection' && (
+          <div className="space-y-6">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <BookOpen size={22} /> Book Collection
+                </h3>
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => setShowAddBookModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+                    <Plus size={16} /> Add Book
+                  </button>
+                  <button onClick={() => setShowManageCategoriesModal(true)} className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+                    <Folder size={16} /> Manage Categories
+                  </button>
+                  <button onClick={() => setShowBulkQRModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+                    <Download size={16} /> Bulk Download QRs
+                  </button>
+                  <button onClick={() => handlePrint('Book Collection', 'book-collection-table')} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+                    <Printer size={16} /> Print List
+                  </button>
                 </div>
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input type="text" placeholder="Search by title, author, category, DDC..." value={bookSearch} onChange={(e) => setBookSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"/>
-                </div>
-                <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="book-rows-per-page" className="text-sm text-gray-600">Rows per page:</label>
-                        <select 
-                            id="book-rows-per-page"
-                            value={bookRowsPerPage}
-                            onChange={e => setBookRowsPerPage(Number(e.target.value))}
-                            className="px-2 py-1 border border-gray-300 rounded-md bg-white text-sm focus:ring-1 focus:ring-purple-400"
-                        >
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg border">
-                        <p className="text-sm font-medium mb-2">Toggle columns for printing:</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-2">
-                            {Object.keys(visibleColumns).map(key => (
-                                <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
-                                    <input type="checkbox" checked={visibleColumns[key as ColumnKey]} onChange={() => toggleColumn(key as ColumnKey)} className="rounded text-purple-600 focus:ring-purple-500" />
-                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table id="book-collection-table" className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-title ${!visibleColumns.title && 'hidden'}`}>Title</th>
-                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-author ${!visibleColumns.author && 'hidden'}`}>Author</th>
-                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-publisher ${!visibleColumns.publisher && 'hidden'}`}>Publisher</th>
-                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-category ${!visibleColumns.category && 'hidden'}`}>Category</th>
-                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-ddc ${!visibleColumns.ddc && 'hidden'}`}>DDC</th>
-                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-price ${!visibleColumns.price && 'hidden'}`}>Price</th>
-                        <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-copies ${!visibleColumns.copies && 'hidden'}`}>Copies</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase no-print-in-popup">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {paginatedBooks.map((book) => (
-                        <tr key={book.id}>
-                          <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 col-title ${!visibleColumns.title && 'hidden'}`}>{book.title}</td>
-                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-author ${!visibleColumns.author && 'hidden'}`}>{book.author}</td>
-                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-publisher ${!visibleColumns.publisher && 'hidden'}`}>{book.publisher || 'N/A'}</td>
-                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-category ${!visibleColumns.category && 'hidden'}`}>{book.categories?.name || 'N/A'}</td>
-                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-ddc ${!visibleColumns.ddc && 'hidden'}`}>{book.ddc_number || 'N/A'}</td>
-                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-price ${!visibleColumns.price && 'hidden'}`}>{book.price ? `₹${book.price.toFixed(2)}` : 'N/A'}</td>
-                          <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-copies ${!visibleColumns.copies && 'hidden'}`}>{book.available_copies} / {book.total_copies}</td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium no-print-in-popup">
-                            <div className="flex items-center gap-4">
-                              <button onClick={() => { setEditingBook(book); setShowBookModal(true); }} className="text-purple-600 hover:text-purple-900" title="Edit Book"><Edit size={18} /></button>
-                              <button onClick={() => handleDeleteBook(book.id)} className="text-red-600 hover:text-red-900" title="Delete Book"><Trash2 size={18} /></button>
-                              <button onClick={() => handleShowQR(book)} className="text-gray-500 hover:text-purple-600" title="Show QR Code"><QrCode size={18} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <Pagination 
-                    currentPage={bookCurrentPage}
-                    totalCount={filteredBooks.length}
-                    pageSize={bookRowsPerPage}
-                    onPageChange={page => setBookCurrentPage(page)}
-                />
               </div>
-            </div>
-            <div className="lg:col-span-2">
-              <ManageCategoriesForm onSave={fetchData} />
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input type="text" placeholder="Search by title, author, category, DDC..." value={bookSearch} onChange={(e) => setBookSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"/>
+              </div>
+              <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                      <label htmlFor="book-rows-per-page" className="text-sm text-gray-600">Rows per page:</label>
+                      <select 
+                          id="book-rows-per-page"
+                          value={bookRowsPerPage}
+                          onChange={e => setBookRowsPerPage(Number(e.target.value))}
+                          className="px-2 py-1 border border-gray-300 rounded-md bg-white text-sm focus:ring-1 focus:ring-purple-400"
+                      >
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                          <option value={200}>200</option>
+                          <option value={400}>400</option>
+                      </select>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border w-full">
+                      <p className="text-sm font-medium mb-2">Toggle columns for printing:</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-2">
+                          {Object.keys(visibleColumns).map(key => (
+                              <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
+                                  <input type="checkbox" checked={visibleColumns[key as ColumnKey]} onChange={() => toggleColumn(key as ColumnKey)} className="rounded text-purple-600 focus:ring-purple-500" />
+                                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                              </label>
+                          ))}
+                      </div>
+                  </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table id="book-collection-table" className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-title ${!visibleColumns.title && 'hidden'}`}>Title</th>
+                      <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-author ${!visibleColumns.author && 'hidden'}`}>Author</th>
+                      <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-publisher ${!visibleColumns.publisher && 'hidden'}`}>Publisher</th>
+                      <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-category ${!visibleColumns.category && 'hidden'}`}>Category</th>
+                      <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-ddc ${!visibleColumns.ddc && 'hidden'}`}>DDC</th>
+                      <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-price ${!visibleColumns.price && 'hidden'}`}>Price</th>
+                      <th className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase col-copies ${!visibleColumns.copies && 'hidden'}`}>Copies</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase no-print-in-popup">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedBooks.map((book) => (
+                      <tr key={book.id}>
+                        <td className={`px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 col-title ${!visibleColumns.title && 'hidden'}`}>{book.title}</td>
+                        <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-author ${!visibleColumns.author && 'hidden'}`}>{book.author}</td>
+                        <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-publisher ${!visibleColumns.publisher && 'hidden'}`}>{book.publisher || 'N/A'}</td>
+                        <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-category ${!visibleColumns.category && 'hidden'}`}>{book.categories?.name || 'N/A'}</td>
+                        <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-ddc ${!visibleColumns.ddc && 'hidden'}`}>{book.ddc_number || 'N/A'}</td>
+                        <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-price ${!visibleColumns.price && 'hidden'}`}>{book.price ? `₹${book.price.toFixed(2)}` : 'N/A'}</td>
+                        <td className={`px-4 py-4 whitespace-nowrap text-sm text-gray-500 col-copies ${!visibleColumns.copies && 'hidden'}`}>{book.available_copies} / {book.total_copies}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium no-print-in-popup">
+                          <div className="flex items-center gap-4">
+                            <button onClick={() => { setEditingBook(book); setShowBookModal(true); }} className="text-purple-600 hover:text-purple-900" title="Edit Book"><Edit size={18} /></button>
+                            <button onClick={() => handleDeleteBook(book.id)} className="text-red-600 hover:text-red-900" title="Delete Book"><Trash2 size={18} /></button>
+                            <button onClick={() => handleShowQR(book)} className="text-gray-500 hover:text-purple-600" title="Show QR Code"><QrCode size={18} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination 
+                  currentPage={bookCurrentPage}
+                  totalCount={filteredBooks.length}
+                  pageSize={bookRowsPerPage}
+                  onPageChange={page => setBookCurrentPage(page)}
+              />
             </div>
           </div>
         )}
@@ -472,7 +499,7 @@ const AdminDashboard: React.FC = () => {
                 <button onClick={() => { setEditingMember(null); setShowMemberModal(true); }} className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"><Plus size={20} /> Add Member</button>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
               <div className="mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -554,7 +581,7 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'Feedback' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Feedback & Suggestions</h2>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
               {loading ? <p>Loading...</p> : feedback.length > 0 ? (
                 <div className="space-y-4">
                   {feedback.map(item => (
@@ -594,7 +621,7 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'History' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Circulation History</h2>
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 items-center mb-4 gap-4">
                 <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -658,6 +685,8 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {activeTab === 'Read With Us' && <ReadWithUsManager />}
       </main>
 
       {showMemberModal && <MemberModal member={editingMember} onClose={() => { setShowMemberModal(false); setEditingMember(null); }} onSave={() => { setShowMemberModal(false); setEditingMember(null); }} />}
@@ -666,6 +695,8 @@ const AdminDashboard: React.FC = () => {
       {showBookQRModal && selectedBookForQR && <BookQRCodeModal book={selectedBookForQR} onClose={() => setShowBookQRModal(false)} />}
       {showBulkQRModal && <BulkQRDownloadModal onClose={() => setShowBulkQRModal(false)} />}
       {showBookModal && <BookModal book={editingBook} categories={categories} onClose={() => { setShowBookModal(false); setEditingBook(null); }} onSave={() => { setShowBookModal(false); setEditingBook(null); }} />}
+      {showAddBookModal && <AddBookModal categories={categories} onSave={fetchData} onClose={() => setShowAddBookModal(false)} />}
+      {showManageCategoriesModal && <CategoryManager onClose={() => setShowManageCategoriesModal(false)} onSave={fetchData} />}
     </div>
   );
 };
