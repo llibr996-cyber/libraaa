@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { supabase, type ReadWithUs } from '../lib/supabase';
+import { supabase, type ReadWithUs, type Language } from '../lib/supabase';
 
 interface AddEditPostModalProps {
   post?: ReadWithUs | null;
@@ -9,6 +9,7 @@ interface AddEditPostModalProps {
 }
 
 const postCategories: ReadWithUs['category'][] = ['Article', 'Book Review', 'Poem', 'Story'];
+const languages: Language[] = ['English', 'Kannada', 'Malayalam', 'Arabic', 'Urdu'];
 
 const AddEditPostModal: React.FC<AddEditPostModalProps> = ({ post, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,9 @@ const AddEditPostModal: React.FC<AddEditPostModalProps> = ({ post, onClose, onSa
     author: '',
     category: 'Article' as ReadWithUs['category'],
     content: '',
+    image_url: '',
+    language: 'English' as Language,
+    author_image_url: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +31,12 @@ const AddEditPostModal: React.FC<AddEditPostModalProps> = ({ post, onClose, onSa
         author: post.author,
         category: post.category,
         content: post.content,
+        image_url: post.image_url || '',
+        language: post.language || 'English',
+        author_image_url: post.author_image_url || '',
       });
     } else {
-      setFormData({ title: '', author: '', category: 'Article', content: '' });
+      setFormData({ title: '', author: '', category: 'Article', content: '', image_url: '', language: 'English', author_image_url: '' });
     }
   }, [post]);
 
@@ -42,7 +49,12 @@ const AddEditPostModal: React.FC<AddEditPostModalProps> = ({ post, onClose, onSa
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("You must be logged in to perform this action.");
 
-      const postData = { ...formData, user_id: user.id };
+      const postData = { 
+        ...formData, 
+        user_id: user.id,
+        image_url: formData.image_url || null,
+        author_image_url: formData.author_image_url || null,
+      };
 
       let response;
       if (post) {
@@ -60,10 +72,12 @@ const AddEditPostModal: React.FC<AddEditPostModalProps> = ({ post, onClose, onSa
       setLoading(false);
     }
   };
+  
+  const isReview = formData.category === 'Book Review';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center p-5 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">{post ? 'Edit Post' : 'Add New Post'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -91,10 +105,39 @@ const AddEditPostModal: React.FC<AddEditPostModalProps> = ({ post, onClose, onSa
               </select>
             </div>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">Language *</label>
+              <select id="language" value={formData.language} onChange={(e) => setFormData({ ...formData, language: e.target.value as Language })} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500">
+                {languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="author_image_url" className="block text-sm font-medium text-gray-700 mb-1">Author Image URL (Optional)</label>
+              <input id="author_image_url" type="url" value={formData.author_image_url} onChange={(e) => setFormData({ ...formData, author_image_url: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500" placeholder="https://example.com/author.png" />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="image_url" className="block text-sm font-medium text-gray-700 mb-1">
+              Post Image URL {isReview ? '*' : '(Optional)'}
+            </label>
+            <input 
+              id="image_url" 
+              type="url" 
+              required={isReview} 
+              value={formData.image_url} 
+              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500" 
+              placeholder="https://example.com/image.png"
+            />
+            {isReview && <p className="text-xs text-gray-500 mt-1">An image is required for book reviews.</p>}
+          </div>
 
           <div>
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">Content *</label>
-            <textarea id="content" required rows={10} value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500" />
+            <textarea id="content" required rows={8} value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500" />
           </div>
         </form>
 

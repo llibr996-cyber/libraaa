@@ -16,6 +16,8 @@ export interface Category {
   created_at: string;
 }
 
+export type Language = 'English' | 'Kannada' | 'Malayalam' | 'Arabic' | 'Urdu';
+
 export interface Book {
   id: string;
   title: string;
@@ -30,7 +32,7 @@ export interface Book {
   created_at: string;
   updated_at: string;
   category_id?: string;
-  language?: 'Kannada' | 'Malayalam' | 'English' | 'Urdu' | 'Arabic';
+  language?: Language;
   price?: number;
   categories?: Category;
 }
@@ -90,4 +92,7 @@ export interface ReadWithUs {
   content: string;
   category: 'Book Review' | 'Poem' | 'Article' | 'Story';
   user_id?: string | null;
+  image_url?: string | null;
+  language: Language;
+  author_image_url?: string | null;
 }
