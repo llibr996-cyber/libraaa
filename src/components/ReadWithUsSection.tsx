@@ -21,7 +21,7 @@ const ReadWithUsSection: React.FC = () => {
         .from('read_with_us')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(20); // Fetch a bit more to have enough for filtering
+        .limit(20);
       
       if (data) setPosts(data);
       setLoading(false);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Menu, X, Facebook, Twitter, Instagram, Search, ArrowRight } from 'lucide-react';
+import { BookOpen, Menu, X, Facebook, Twitter, Instagram, Search, CheckCircle } from 'lucide-react';
 import { supabase, type Book } from '../lib/supabase';
 import ReadWithUsSection from './ReadWithUsSection';
 
@@ -37,6 +37,8 @@ const LandingPage: React.FC = () => {
     { name: 'Read With Us', href: '#read-with-us' },
     { name: 'Contact', href: '#contact' },
   ];
+  
+  const highlights = ["Access Anytime", "Multilingual", "Reviews & Articles", "Student-Friendly"];
 
   return (
     <div className="bg-white text-neutral-800 font-sans">
@@ -76,12 +78,29 @@ const LandingPage: React.FC = () => {
 
       <main>
         <section id="home" className="relative min-h-screen flex items-center justify-center text-white bg-gray-800">
-          <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070&auto=format&fit=crop')" }}></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="relative z-10 text-center px-4">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-lg">Welcome to Muhimmath Library</h1>
-            <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto drop-shadow">Your gateway to knowledge, discovery, and community. Start your reading adventure today.</p>
-            <form onSubmit={handleHeroSearch} className="mt-8 max-w-xl mx-auto">
+          <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070&auto=format&fit=crop')" }}></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/60 to-gray-900/80"></div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.8 }} 
+            className="relative z-10 text-center px-4 py-20"
+          >
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-lg leading-tight">
+              6000+ Books, Available in 6 Different Languages
+            </h1>
+            <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-gray-200 drop-shadow">
+              A modern digital library built for readers, students, and book lovers.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center items-center gap-x-4 gap-y-2">
+              {highlights.map(highlight => (
+                <div key={highlight} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white text-sm font-medium px-3 py-1.5 rounded-full">
+                  <CheckCircle size={16} className="text-green-300" />
+                  {highlight}
+                </div>
+              ))}
+            </div>
+            <form onSubmit={handleHeroSearch} className="mt-10 max-w-xl mx-auto">
               <div className="relative">
                 <input
                   type="search"
@@ -91,7 +110,7 @@ const LandingPage: React.FC = () => {
                   className="w-full pl-5 pr-28 py-4 rounded-full text-gray-800 border-2 border-transparent focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
                 />
                 <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 bg-purple-600 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-purple-700 transition-colors">
-                  Search
+                  <Search size={20} />
                 </button>
               </div>
             </form>

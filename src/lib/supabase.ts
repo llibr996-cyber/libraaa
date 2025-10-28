@@ -95,4 +95,16 @@ export interface ReadWithUs {
   image_url?: string | null;
   language: Language;
   author_image_url?: string | null;
+  like_count: number;
+  read_count: number;
+  share_count: number;
+}
+
+export interface PostComment {
+  id: string;
+  created_at: string;
+  post_id: string;
+  commenter_name: string;
+  content: string;
+  is_approved: boolean;
 }

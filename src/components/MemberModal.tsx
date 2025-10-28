@@ -74,7 +74,6 @@ const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onSave }) =>
         status: member.status
       });
     } else {
-      // For new members, generate a unique placeholder email and fetch register number
       fetchNextRegisterNumber();
       setFormData(prev => ({
         ...prev,
@@ -100,23 +99,14 @@ const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onSave }) =>
         const { error } = await supabase.from('members').update(memberData).eq('id', member.id);
         if (error) throw error;
       } else { // Adding new member
-        const { name, place, class: className, register_number, email, membership_type, status } = formData;
+        const { name, place, class: className, register_number, email, membership_type, status, phone } = formData;
         const newMemberData = {
-            name,
-            place,
-            class: className,
-            register_number,
-            email,
-            membership_type,
-            status,
-            membership_date: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            name, place, class: className, register_number, email, membership_type, status, phone,
+            membership_date: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString()
         };
         const { error } = await supabase.from('members').insert(newMemberData);
         if (error) throw error;
       }
-
       onSave();
     } catch (error) {
       console.error('Error saving member:', error);
@@ -134,71 +124,43 @@ const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onSave }) =>
           <button onClick={onClose}><X /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {!member ? (
-            // Simplified form for adding
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+              <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Place</label>
+            <input type="text" value={formData.place} onChange={(e) => setFormData({ ...formData, place: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+            <Select
+                options={classOptions}
+                value={classOptions.find(opt => opt.value === formData.class)}
+                onChange={(option) => setFormData({ ...formData, class: option ? option.value : '' })}
+                placeholder="Search and select a class..."
+                isClearable
+                styles={customSelectStyles}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Register Number</label>
+            <div className="relative">
+              <input type="text" readOnly={!member} value={formData.register_number} onChange={(e) => member && setFormData({...formData, register_number: e.target.value})} className={`w-full px-3 py-2 border rounded-md ${!member ? 'bg-gray-100' : ''}`} />
+              {isFetchingId && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" />}
+            </div>
+          </div>
+          {member && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Place</label>
-                <input type="text" value={formData.place} onChange={(e) => setFormData({ ...formData, place: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                <Select
-                    options={classOptions}
-                    value={classOptions.find(opt => opt.value === formData.class)}
-                    onChange={(option) => setFormData({ ...formData, class: option ? option.value : '' })}
-                    placeholder="Search and select a class..."
-                    isClearable
-                    styles={customSelectStyles}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Register Number</label>
-                <div className="relative">
-                  <input type="text" readOnly value={formData.register_number} className="w-full px-3 py-2 border rounded-md bg-gray-100" />
-                  {isFetchingId && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" />}
-                </div>
-              </div>
-            </>
-          ) : (
-            // Full form for editing
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                  <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                  <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Place</label>
-                  <input type="text" value={formData.place} onChange={(e) => setFormData({ ...formData, place: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Register Number</label>
-                  <input type="text" value={formData.register_number} onChange={(e) => setFormData({ ...formData, register_number: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                   <Select
-                        options={classOptions}
-                        value={classOptions.find(opt => opt.value === formData.class)}
-                        onChange={(option) => setFormData({ ...formData, class: option ? option.value : '' })}
-                        placeholder="Search and select a class..."
-                        isClearable
-                        styles={customSelectStyles}
-                    />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
@@ -208,9 +170,9 @@ const MemberModal: React.FC<MemberModalProps> = ({ member, onClose, onSave }) =>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Membership Type</label>
                   <select value={formData.membership_type} onChange={(e) => setFormData({ ...formData, membership_type: e.target.value as Member['membership_type'] })} className="w-full px-3 py-2 border rounded-md">
+                    <option value="student">Student</option>
                     <option value="regular">Regular</option>
                     <option value="premium">Premium</option>
-                    <option value="student">Student</option>
                   </select>
                 </div>
                 <div>

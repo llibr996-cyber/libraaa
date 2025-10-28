@@ -6,6 +6,20 @@ body {
     @apply bg-neutral-50 text-neutral-800 antialiased;
 }
 
+.prose {
+    font-size: 1.125rem;
+    line-height: 1.75;
+}
+.prose h1, .prose h2, .prose h3 {
+    @apply font-bold text-gray-900;
+}
+.prose a {
+    @apply text-purple-600 hover:text-purple-800;
+}
+.prose blockquote {
+    @apply border-l-4 border-purple-200 pl-4 text-gray-600 italic;
+}
+
 @media print {
   body * {
     visibility: hidden;
