@@ -11,7 +11,7 @@ interface MemberModalProps {
 
 const memberClasses = [
     "Staff", "BS 5", "BS 4", "BS 3A", "BS 3B", "BS 2A", "BS 2B", "BS 1A", "BS 1B", "HS 2A", "HS 2B",
-    "HS 2C", "HS 1A", "HS 2B", "HS 2C", "QURAN ACADEMY",
+    "HS 2C", "HS 1A", "HS 1B", "HS 1C", "QURAN ACADEMY",
     "Usthad", "Librarian", "Other"
 ];
 
