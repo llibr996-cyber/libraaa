@@ -197,16 +197,16 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
         <div className="p-6">
           {!scannedBook ? (
             <>
-              <div className="flex items-center justify-center gap-2 bg-gray-100 rounded-lg p-1 mb-4">
+              <div className="flex items-center justify-center gap-2 bg-neutral-100 rounded-lg p-1 mb-4">
                 <button onClick={() => setScanMode('scan')} className={`w-full py-2 rounded-md font-medium text-sm flex items-center justify-center gap-2 ${scanMode === 'scan' ? 'bg-white shadow' : ''}`}><QrCode size={16} /> Scan</button>
                 <button onClick={() => setScanMode('manual')} className={`w-full py-2 rounded-md font-medium text-sm flex items-center justify-center gap-2 ${scanMode === 'manual' ? 'bg-white shadow' : ''}`}><Type size={16} /> Manual</button>
               </div>
               {scanMode === 'scan' ? (
-                <div id={scannerRegionId} className="w-full h-64 border rounded-lg bg-gray-900"></div>
+                <div id={scannerRegionId} className="w-full h-64 border rounded-lg bg-neutral-900"></div>
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Enter Book DDC or ID (auto-searches)</label>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">Enter Book DDC or ID (auto-searches)</label>
                     <input
                       type="text"
                       value={manualIdentifier}
@@ -217,12 +217,12 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
                     />
                   </div>
                   <div className="relative flex items-center">
-                    <div className="flex-grow border-t border-gray-300"></div>
-                    <span className="flex-shrink mx-4 text-gray-500 text-sm">OR</span>
-                    <div className="flex-grow border-t border-gray-300"></div>
+                    <div className="flex-grow border-t border-neutral-300"></div>
+                    <span className="flex-shrink mx-4 text-neutral-500 text-sm">OR</span>
+                    <div className="flex-grow border-t border-neutral-300"></div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Search and Select Book</label>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">Search and Select Book</label>
                     <SearchableSelect
                       value={null}
                       onChange={(option: any) => {
@@ -247,19 +247,19 @@ const ScanQRModal: React.FC<ScanQRModalProps> = ({ onClose, onSuccess }) => {
                 <h3 className="font-bold text-green-800">{scannedBook.title}</h3>
                 <p className="text-sm text-green-700">by {scannedBook.author}</p>
               </div>
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-2 bg-neutral-100 rounded-lg p-1">
                 <button onClick={() => setActionType('issue')} className={`w-full py-2 rounded-md font-medium text-sm ${actionType === 'issue' ? 'bg-white shadow' : ''}`}>Issue Book</button>
                 <button onClick={() => setActionType('return')} className={`w-full py-2 rounded-md font-medium text-sm ${actionType === 'return' ? 'bg-white shadow' : ''}`}>Return Book</button>
               </div>
               {actionType === 'issue' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Member *</label>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Select Member *</label>
                   <SearchableSelect value={selectedMember} onChange={setSelectedMember} placeholder="Search for a member..." tableName="members" labelField="name" searchFields={['name', 'email', 'register_number']} required />
                 </div>
               )}
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={resetState} className="px-4 py-2 bg-gray-100 rounded-md">Scan Another</button>
-                <button onClick={handleFinalAction} disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50 flex items-center justify-center">
+                <button type="button" onClick={resetState} className="px-4 py-2 bg-neutral-100 rounded-md">Scan Another</button>
+                <button onClick={handleFinalAction} disabled={loading} className="px-4 py-2 bg-primary text-white rounded-md disabled:opacity-50 flex items-center justify-center">
                   {loading ? <Loader2 className="animate-spin" /> : (actionType === 'issue' ? 'Issue Book' : 'Confirm Return')}
                 </button>
               </div>

@@ -33,24 +33,24 @@ const BookQRCodeModal: React.FC<BookQRCodeModalProps> = ({ book, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Book QR Code</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <div className="flex justify-between items-center p-6 border-b border-neutral-200">
+          <h2 className="text-xl font-semibold text-neutral-900">Book QR Code</h2>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
             <X size={24} />
           </button>
         </div>
         <div className="p-6 text-center">
           <div id="qr-print-area">
-            <h3 className="text-lg font-medium text-gray-800 mb-2">{book.title}</h3>
-            <p className="text-sm text-gray-500 mb-4">DDC: {book.ddc_number || 'N/A'}</p>
+            <h3 className="text-lg font-medium text-neutral-800 mb-2">{book.title}</h3>
+            <p className="text-sm text-neutral-500 mb-4">DDC: {book.ddc_number || 'N/A'}</p>
             <div className="flex justify-center">
               <QRCodeCanvas value={qrValue} size={256} includeMargin={true} />
             </div>
           </div>
         </div>
-        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-md">Close</button>
-          <button onClick={handlePrint} className="px-4 py-2 bg-purple-600 text-white rounded-md flex items-center gap-2">
+        <div className="p-6 border-t border-neutral-200 flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 bg-neutral-100 rounded-md">Close</button>
+          <button onClick={handlePrint} className="px-4 py-2 bg-primary text-white rounded-md flex items-center gap-2">
             <Printer size={18} />
             Print
           </button>

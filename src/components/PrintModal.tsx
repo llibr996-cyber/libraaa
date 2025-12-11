@@ -42,24 +42,24 @@ const PrintModal: React.FC<PrintModalProps> = ({ onClose, onPrint }) => {
           <button onClick={onClose}><X /></button>
         </div>
         <div className="p-6 space-y-4">
-          <p className="text-sm text-gray-600">Choose which reports you want to include in the printout.</p>
+          <p className="text-sm text-neutral-600">Choose which reports you want to include in the printout.</p>
           <div className="space-y-3">
             {Object.entries(printSections).map(([key, title]) => (
-              <label key={key} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md cursor-pointer hover:bg-gray-100">
+              <label key={key} className="flex items-center gap-3 p-3 bg-neutral-50 rounded-md cursor-pointer hover:bg-neutral-100">
                 <input
                   type="checkbox"
                   checked={!!selections[key]}
                   onChange={() => handleCheckboxChange(key)}
-                  className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  className="h-5 w-5 rounded border-neutral-300 text-primary focus:ring-primary-light"
                 />
-                <span className="font-medium text-gray-700">{title}</span>
+                <span className="font-medium text-neutral-700">{title}</span>
               </label>
             ))}
           </div>
         </div>
         <div className="p-6 border-t flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-md">Cancel</button>
-          <button onClick={handlePrintClick} className="px-4 py-2 bg-purple-600 text-white rounded-md flex items-center gap-2">
+          <button onClick={onClose} className="px-4 py-2 bg-neutral-100 rounded-md">Cancel</button>
+          <button onClick={handlePrintClick} className="px-4 py-2 bg-primary text-white rounded-md flex items-center gap-2">
             <Printer size={18} />
             Print
           </button>

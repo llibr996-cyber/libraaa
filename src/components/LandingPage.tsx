@@ -1,174 +1,241 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Menu, X, Facebook, Twitter, Instagram, Search, CheckCircle } from 'lucide-react';
-import { supabase, type Book } from '../lib/supabase';
+import { BookOpen, Menu, X, MessageSquare, Heart, Zap, Search, ArrowRight, Library, ChevronDown } from 'lucide-react';
 import ReadWithUsSection from './ReadWithUsSection';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
-  const [loadingBooks, setLoadingBooks] = useState(true);
-  const [heroSearchQuery, setHeroSearchQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const fetchFeaturedBooks = async () => {
-      setLoadingBooks(true);
-      const { data } = await supabase.from('books').select('*').limit(4).order('created_at', { ascending: false });
-      setFeaturedBooks(data || []);
-      setLoadingBooks(false);
-    };
-    fetchFeaturedBooks();
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleHeroSearch = (e: React.FormEvent) => {
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
-    if (heroSearchQuery.trim()) {
-      navigate(`/home?search=${encodeURIComponent(heroSearchQuery)}`);
-    } else {
-      navigate('/home');
-    }
+    const element = document.querySelector(id);
+    element?.scrollIntoView({ behavior: 'smooth' });
+    if (isMenuOpen) setIsMenuOpen(false);
   };
 
-  const navLinks = [
-    { name: 'Home', href: '#home' },
-    { name: 'Featured', href: '#featured' },
-    { name: 'Read With Us', href: '#read-with-us' },
-    { name: 'Contact', href: '#contact' },
-  ];
-  
-  const highlights = ["Access Anytime", "Multilingual", "Reviews & Articles", "Student-Friendly"];
-
   return (
-    <div className="bg-white text-neutral-800 font-sans">
-      <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm shadow-sm z-50">
+    <div className="bg-white text-neutral-800 font-sans min-h-screen flex flex-col">
+      {/* Navbar */}
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <a href="#home" className="flex items-center gap-2 cursor-pointer">
-              <BookOpen className="text-purple-600" />
-              <span className="text-xl font-bold text-neutral-900">MUHIMMATH LIBRARY</span>
-            </a>
+          <div className="flex justify-between items-center">
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="bg-primary p-2 rounded-xl text-white shadow-lg shadow-primary/20 group-hover:bg-primary-dark transition-colors">
+                <Library size={24} />
+              </div>
+              <span className="text-xl font-bold text-neutral-900 tracking-tight">MUHIMMATH</span>
+            </Link>
+
+            {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-8">
-              {navLinks.map(link => (
-                <a key={link.name} href={link.href} className="font-medium text-neutral-600 hover:text-purple-600 transition-colors">{link.name}</a>
-              ))}
+              <a href="#home" onClick={(e) => handleSmoothScroll(e, '#home')} className="font-medium text-neutral-600 hover:text-primary transition-colors">Home</a>
+              <a href="#read-with-us" onClick={(e) => handleSmoothScroll(e, '#read-with-us')} className="font-medium text-neutral-600 hover:text-primary transition-colors">Read With Us</a>
+              <a href="#features" onClick={(e) => handleSmoothScroll(e, '#features')} className="font-medium text-neutral-600 hover:text-primary transition-colors">Features</a>
             </nav>
-            <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/login')} className="hidden md:block bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors">
-                Admin Login
+
+            <div className="hidden md:flex items-center gap-4">
+              <button onClick={() => navigate('/member-status')} className="text-neutral-600 hover:text-primary font-medium px-4 py-2 transition-colors">
+                Check Status
               </button>
-              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-neutral-600">
-                {isMenuOpen ? <X /> : <Menu />}
+              <button onClick={() => navigate('/home')} className="bg-primary text-white px-6 py-2.5 rounded-full font-semibold hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 transform hover:-translate-y-0.5 flex items-center gap-2">
+                Enter Library <ArrowRight size={16} />
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-neutral-600">
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
         {isMenuOpen && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="md:hidden px-4 pt-2 pb-4 space-y-2">
-            {navLinks.map(link => (
-              <a key={link.name} href={link.href} onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:bg-neutral-100">{link.name}</a>
-            ))}
-            <button onClick={() => { navigate('/login'); setIsMenuOpen(false); }} className="w-full text-left bg-purple-600 text-white px-3 py-2 rounded-md font-semibold">
-              Admin Login
-            </button>
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: 'auto' }} 
+            className="md:hidden bg-white border-t border-neutral-100 shadow-lg"
+          >
+            <div className="px-4 py-6 space-y-4">
+              <a href="#home" onClick={(e) => handleSmoothScroll(e, '#home')} className="block text-lg font-medium text-neutral-700">Home</a>
+              <a href="#read-with-us" onClick={(e) => handleSmoothScroll(e, '#read-with-us')} className="block text-lg font-medium text-neutral-700">Read With Us</a>
+              <div className="pt-4 border-t border-neutral-100 space-y-3">
+                <button onClick={() => navigate('/member-status')} className="w-full text-left px-4 py-3 rounded-lg bg-neutral-50 text-neutral-700 font-semibold">
+                  Check Member Status
+                </button>
+                <button onClick={() => navigate('/home')} className="w-full text-left px-4 py-3 rounded-lg bg-primary text-white font-semibold">
+                  Enter Library
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </header>
 
-      <main>
-        <section id="home" className="relative min-h-screen flex items-center justify-center text-white bg-gray-800">
-          <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070&auto=format&fit=crop')" }}></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/60 to-gray-900/80"></div>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 0.8 }} 
-            className="relative z-10 text-center px-4 py-20"
-          >
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-lg leading-tight">
-              6000+ Books, Available in 6 Different Languages
-            </h1>
-            <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-gray-200 drop-shadow">
-              A modern digital library built for readers, students, and book lovers.
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center items-center gap-x-4 gap-y-2">
-              {highlights.map(highlight => (
-                <div key={highlight} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white text-sm font-medium px-3 py-1.5 rounded-full">
-                  <CheckCircle size={16} className="text-green-300" />
-                  {highlight}
-                </div>
-              ))}
-            </div>
-            <form onSubmit={handleHeroSearch} className="mt-10 max-w-xl mx-auto">
-              <div className="relative">
-                <input
-                  type="search"
-                  value={heroSearchQuery}
-                  onChange={(e) => setHeroSearchQuery(e.target.value)}
-                  placeholder="Search for books, authors, or categories..."
-                  className="w-full pl-5 pr-28 py-4 rounded-full text-gray-800 border-2 border-transparent focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
-                />
-                <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 bg-purple-600 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-purple-700 transition-colors">
-                  <Search size={20} />
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </section>
-
-        <section id="featured" className="py-16 lg:py-24 bg-gray-50">
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section id="home" className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent -z-10" />
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/5 to-transparent skew-x-12 transform origin-top -z-10 hidden lg:block" />
+          
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-neutral-900">Featured Books</h2>
-              <p className="mt-2 text-neutral-600">A glimpse into our newest and most popular additions.</p>
-            </div>
-            {loadingBooks ? (
-              <div className="flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div></div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {featuredBooks.map(book => (
-                  <div key={book.id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col group transition-transform duration-300 hover:-translate-y-1">
-                    <div className="h-56 bg-gray-200 flex items-center justify-center">
-                      <BookOpen size={48} className="text-gray-300" />
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="text-center lg:text-left"
+              >
+                <div className="inline-flex items-center gap-2 bg-white border border-neutral-200 rounded-full px-4 py-1.5 mb-8 shadow-sm animate-fade-in">
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-sm font-medium text-neutral-600">Smart Library Management</span>
+                </div>
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-neutral-900 leading-tight mb-6">
+                  Unlock the <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-dark relative">
+                    World of Books
+                  </span>
+                </h1>
+                <p className="text-lg sm:text-xl text-neutral-600 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                  Seamlessly manage your reading journey. Access thousands of resources, track your history, and join a community of learners.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                  <button onClick={() => navigate('/home')} className="w-full sm:w-auto px-8 py-4 bg-primary text-white rounded-xl font-bold text-lg shadow-xl shadow-primary/20 hover:bg-primary-dark hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+                    Explore Collection <ArrowRight size={20} />
+                  </button>
+                  <button onClick={() => navigate('/member-status')} className="w-full sm:w-auto px-8 py-4 bg-white text-neutral-700 border border-neutral-200 rounded-xl font-bold text-lg hover:border-primary hover:text-primary hover:shadow-lg transition-all">
+                    My Status
+                  </button>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, rotate: 2 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                transition={{ duration: 1, delay: 0.2, type: "spring" }}
+                className="relative hidden lg:block"
+              >
+                <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-4 border border-neutral-100">
+                  <img 
+                    src="https://images.unsplash.com/photo-1521587760476-6c12a4b040da?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                    alt="Library" 
+                    className="rounded-2xl w-full h-[500px] object-cover"
+                  />
+                  
+                  {/* Floating Stats Card */}
+                  <motion.div 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                    className="absolute -bottom-8 -left-8 bg-white p-6 rounded-2xl shadow-xl border border-neutral-100 max-w-xs"
+                  >
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="bg-green-100 p-3 rounded-xl text-green-600">
+                        <BookOpen size={28} />
+                      </div>
+                      <div>
+                        <p className="text-sm text-neutral-500 font-medium">Total Collection</p>
+                        <p className="text-2xl font-bold text-neutral-900">5,000+</p>
+                      </div>
                     </div>
-                    <div className="p-5 flex flex-col flex-grow">
-                      <h3 className="text-md font-bold text-gray-900 line-clamp-2 group-hover:text-purple-700">{book.title}</h3>
-                      <p className="text-sm text-gray-500 mt-1">by {book.author}</p>
-                      <button onClick={() => navigate(`/book/${book.id}`)} className="mt-auto pt-4 font-semibold text-sm text-purple-600 hover:text-purple-800 self-start">
-                        View Details &rarr;
-                      </button>
+                    <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 w-3/4 rounded-full" />
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="text-center mt-12">
-              <button onClick={() => navigate('/home')} className="bg-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-transform hover:scale-105 shadow-lg">
-                Explore Full Collection
-              </button>
+                  </motion.div>
+                </div>
+                
+                {/* Decorative Elements */}
+                <div className="absolute -top-10 -right-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-10" />
+                <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-accent/10 rounded-full blur-3xl -z-10" />
+              </motion.div>
             </div>
+          </div>
+          
+          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce text-neutral-400">
+            <ChevronDown size={32} />
           </div>
         </section>
 
+        {/* Read With Us Section - Enhanced */}
         <ReadWithUsSection />
 
-        <section id="contact" className="py-16 lg:py-24 bg-gray-800 text-white">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-bold mb-4">Get In Touch</h2>
-            <p className="text-neutral-300 mb-8">Have a question or suggestion? We'd love to hear from you.</p>
-            <div className="mt-8 flex justify-center gap-4">
-                <a href="#" className="bg-white/10 p-3 rounded-full hover:bg-white/20 transition-colors"><Facebook /></a>
-                <a href="#" className="bg-white/10 p-3 rounded-full hover:bg-white/20 transition-colors"><Twitter /></a>
-                <a href="#" className="bg-white/10 p-3 rounded-full hover:bg-white/20 transition-colors"><Instagram /></a>
+        {/* Features Section */}
+        <section id="features" className="py-24 bg-neutral-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-20">
+              <span className="text-primary font-bold tracking-wider uppercase text-sm bg-primary/10 px-3 py-1 rounded-full">Features</span>
+              <h2 className="text-4xl font-bold text-neutral-900 mt-4 mb-4">Everything you need</h2>
+              <p className="text-neutral-600 max-w-2xl mx-auto text-lg">A complete solution for managing library resources efficiently and effectively.</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+              {[
+                {
+                  icon: <Search size={32} />,
+                  title: "Smart Search",
+                  desc: "Instantly find books by title, author, or DDC number with our powerful search engine.",
+                  color: "bg-blue-500"
+                },
+                {
+                  icon: <Zap size={32} />,
+                  title: "Real-time Status",
+                  desc: "Check availability and your borrowing status instantly without logging in.",
+                  color: "bg-amber-500"
+                },
+                {
+                  icon: <MessageSquare size={32} />,
+                  title: "Community Hub",
+                  desc: "Engage with other readers through reviews, ratings, and discussions.",
+                  color: "bg-rose-500"
+                }
+              ].map((feature, idx) => (
+                <motion.div 
+                  key={idx}
+                  whileHover={{ y: -10 }}
+                  className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-100 hover:shadow-xl transition-all duration-300"
+                >
+                  <div className={`${feature.color} w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-${feature.color}/30`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-neutral-900 mb-3">{feature.title}</h3>
+                  <p className="text-neutral-600 leading-relaxed">{feature.desc}</p>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="bg-neutral-900 text-neutral-400 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} Muhimmath Library. All Rights Reserved.</p>
+      <footer className="bg-neutral-900 text-white py-16 border-t border-neutral-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/10 p-2.5 rounded-xl">
+                <Library size={28} />
+              </div>
+              <div>
+                <span className="text-2xl font-bold block">Muhimmath</span>
+                <span className="text-xs text-neutral-400 tracking-widest uppercase">Library System</span>
+              </div>
+            </div>
+            <div className="text-neutral-400 text-sm text-center md:text-right">
+              <p>&copy; {new Date().getFullYear()} Muhimmath Library. All Rights Reserved.</p>
+              <div className="mt-2 space-x-6">
+                <Link to="/admin-login" className="hover:text-white transition-colors">Admin Login</Link>
+                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                <a href="#" className="hover:text-white transition-colors">Terms</a>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

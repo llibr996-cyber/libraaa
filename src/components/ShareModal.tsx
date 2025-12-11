@@ -13,8 +13,11 @@ const ShareModal: React.FC<ShareModalProps> = ({ post, onClose }) => {
   const shareUrl = `${window.location.origin}/read-with-us/${post.id}`;
   const shareText = `Check out this article: "${post.title}" by ${post.author}`;
 
-  const incrementShareCount = () => {
-    supabase.rpc('increment_share_count', { post_id_in: post.id }).catch(console.error);
+  const incrementShareCount = async () => {
+    const { error } = await supabase.rpc('increment_share_count', { post_id_in: post.id });
+    if (error) {
+        console.error('Failed to increment share count:', error);
+    }
   };
 
   const copyToClipboard = () => {

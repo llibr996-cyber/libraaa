@@ -66,13 +66,13 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       styles={{
         control: (base) => ({
           ...base,
-          borderColor: '#d1d5db',
+          borderColor: '#cbd5e1',
           '&:hover': { borderColor: '#a5b4fc' },
           boxShadow: 'none',
         }),
         option: (base, { isFocused, isSelected }) => ({
           ...base,
-          backgroundColor: isSelected ? '#8b5cf6' : isFocused ? '#ede9fe' : undefined,
+          backgroundColor: isSelected ? '#4338CA' : isFocused ? '#E0E7FF' : undefined,
           color: isSelected ? 'white' : 'black',
         }),
       }}

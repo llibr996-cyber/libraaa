@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, BookOpen, Mic, MicOff } from 'lucide-react';
+import { Search, BookOpen, Mic, MicOff, Hash } from 'lucide-react';
 import { supabase, type Book, type Category } from '../lib/supabase';
 import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import Pagination from './Pagination';
@@ -119,45 +119,47 @@ const LibraryCollection: React.FC = () => {
 
     if (borrowerName) {
       return (
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
-          <span className="font-semibold text-xs text-yellow-700 truncate">Borrowed by {borrowerName}</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+          <span className="font-semibold text-xs text-yellow-700 truncate">Borrowed</span>
         </div>
       );
     }
     
     if (book.available_copies > 0) {
       return (
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
           <span className="font-semibold text-xs text-green-700">Available</span>
         </div>
       );
     }
 
     return (
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-          <span className="font-semibold text-xs text-red-700">All copies issued</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+          <span className="font-semibold text-xs text-red-700">Issued</span>
         </div>
       );
   };
 
   const BookCard: React.FC<{ book: Book }> = ({ book }) => (
     <div 
-      className="border border-neutral-200 rounded-lg shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col bg-white cursor-pointer"
+      className="border border-neutral-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col bg-white cursor-pointer"
       onClick={() => setSelectedBook(book)}
     >
-        <div className="h-48 bg-neutral-100 flex items-center justify-center rounded-t-lg">
-            <BookOpen size={40} className="text-neutral-300" />
+        <div className="h-20 bg-neutral-100 flex items-center justify-center rounded-t-lg">
+            <BookOpen size={24} className="text-neutral-300" />
         </div>
-        <div className="p-4 flex flex-col flex-grow">
-            <h3 className="font-semibold text-neutral-800 text-base leading-tight truncate" title={book.title}>{book.title}</h3>
-            <p className="text-sm text-neutral-500 truncate" title={book.author}>by {book.author}</p>
-            {book.categories?.name && (
-              <p className="text-xs text-purple-600 font-medium mt-1 truncate" title={book.categories.name}>{book.categories.name}</p>
+        <div className="p-1.5 flex flex-col flex-grow">
+            <h3 className="font-semibold text-neutral-800 text-xs leading-tight line-clamp-2" title={book.title}>{book.title}</h3>
+            <p className="text-[11px] text-neutral-500 truncate" title={book.author}>by {book.author}</p>
+            {book.ddc_number && (
+              <p className="text-[11px] text-primary font-medium mt-0.5 truncate flex items-center gap-1" title={`DDC: ${book.ddc_number}`}>
+                <Hash size={10}/> {book.ddc_number}
+              </p>
             )}
-            <div className="mt-auto pt-3">
+            <div className="mt-auto pt-1.5">
                 <BookStatus book={book} />
             </div>
         </div>
@@ -167,14 +169,14 @@ const LibraryCollection: React.FC = () => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h2 className="text-2xl font-bold text-neutral-900">Library Collection</h2>
-        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-          <span className="text-sm font-medium text-gray-600 px-2 hidden sm:inline">Group by:</span>
+        <h2 className="text-2xl font-bold text-secondary-dark">Library Collection</h2>
+        <div className="flex items-center gap-2 bg-neutral-100 rounded-lg p-1">
+          <span className="text-sm font-medium text-neutral-600 px-2 hidden sm:inline">Group by:</span>
           {(['none', 'category'] as const).map(group => (
             <button 
               key={group} 
               onClick={() => setGroupBy(group)} 
-              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors capitalize ${groupBy === group ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
+              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors capitalize ${groupBy === group ? 'bg-white text-primary shadow-sm' : 'text-neutral-600 hover:bg-neutral-200'}`}
             >
               {group === 'none' ? 'All' : group}
             </button>
@@ -190,13 +192,13 @@ const LibraryCollection: React.FC = () => {
             placeholder={isListening ? "Listening..." : "Search collection..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-12 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-purple-400 transition-shadow"
+            className="w-full pl-12 pr-12 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-light focus:border-primary transition-shadow"
           />
           {isSpeechRecognitionSupported && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
               <button 
                 onClick={startListening}
-                className={`p-1.5 rounded-full transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-neutral-500 hover:bg-neutral-100'}`}
+                className={`p-1.5 rounded-full transition-colors ${isListening ? 'bg-accent text-white animate-pulse' : 'text-neutral-500 hover:bg-neutral-100'}`}
                 title="Search with voice"
               >
                 {isListening ? <MicOff size={20} /> : <Mic size={20} />}
@@ -209,7 +211,7 @@ const LibraryCollection: React.FC = () => {
           <select 
             value={voiceLang} 
             onChange={e => setVoiceLang(e.target.value)} 
-            className="lg:col-span-2 w-full px-3 py-2 border border-neutral-300 rounded-lg bg-white focus:ring-2 focus:ring-purple-300"
+            className="lg:col-span-2 w-full px-3 py-2 border border-neutral-300 rounded-lg bg-white focus:ring-2 focus:ring-primary-light"
             aria-label="Select voice typing language"
           >
             <option value="en-US">English</option>
@@ -222,7 +224,7 @@ const LibraryCollection: React.FC = () => {
         <select 
           value={filterCategory} 
           onChange={e => setFilterCategory(e.target.value)} 
-          className={`w-full px-3 py-2 border border-neutral-300 rounded-lg bg-white focus:ring-2 focus:ring-purple-300 ${isSpeechRecognitionSupported ? 'lg:col-span-3' : 'lg:col-span-4'}`}
+          className={`w-full px-3 py-2 border border-neutral-300 rounded-lg bg-white focus:ring-2 focus:ring-primary-light ${isSpeechRecognitionSupported ? 'lg:col-span-3' : 'lg:col-span-4'}`}
         >
           <option value="all">All Categories</option>
           {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
@@ -235,7 +237,7 @@ const LibraryCollection: React.FC = () => {
           id="rows-per-page"
           value={rowsPerPage}
           onChange={e => setRowsPerPage(Number(e.target.value))}
-          className="px-2 py-1 border border-neutral-300 rounded-md bg-white text-sm focus:ring-1 focus:ring-purple-400"
+          className="px-2 py-1 border border-neutral-300 rounded-md bg-white text-sm focus:ring-1 focus:ring-primary-light"
         >
           <option value={10}>10</option>
           <option value={25}>25</option>
@@ -249,17 +251,17 @@ const LibraryCollection: React.FC = () => {
       ) : filteredBooks.length > 0 ? (
           <>
             {groupBy === 'none' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4">
                     {paginatedBooks.map(book => <BookCard key={book.id} book={book} />)}
                 </div>
             ) : (
                 <div className="space-y-8">
                 {Object.entries(groupedBooks!).sort(([a], [b]) => a.localeCompare(b)).map(([groupName, booksInGroup]) => (
                     <div key={groupName}>
-                        <h3 className="px-1 py-3 font-bold text-purple-800 text-lg border-b-2 border-purple-100 mb-4">
+                        <h3 className="px-1 py-3 font-bold text-primary-dark text-lg border-b-2 border-primary/20 mb-4">
                             {groupName} <span className="text-base font-medium text-neutral-500">({booksInGroup.length})</span>
                         </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4">
                             {booksInGroup.map(book => <BookCard key={book.id} book={book} />)}
                         </div>
                     </div>
@@ -281,7 +283,7 @@ const LibraryCollection: React.FC = () => {
           </p>
         </div>
       )}
-      <BookDetailModal book={selectedBook} onClose={() => setSelectedBook(null)} />
+      <BookDetailModal book={selectedBook} borrowerName={selectedBook ? borrowersMap.get(selectedBook.id) : null} onClose={() => setSelectedBook(null)} />
     </div>
   );
 };

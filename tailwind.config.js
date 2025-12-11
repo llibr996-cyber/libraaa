@@ -7,12 +7,20 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#6d28d9',
-          light: '#8b5cf6',
-          dark: '#5b21b6',
+          light: '#A7F3D0', // emerald-200
+          DEFAULT: '#34D399', // emerald-400
+          dark: '#059669',   // emerald-600
         },
-        secondary: '#10b981',
-        accent: '#f59e0b',
+        secondary: {
+          light: '#475569', // slate-600
+          DEFAULT: '#1E293B', // slate-800
+          dark: '#0F172A',   // slate-900
+        },
+        accent: {
+          light: '#F472B6', // rose-400
+          DEFAULT: '#EC4899', // rose-500
+          dark: '#BE185D',   // rose-700
+        },
         neutral: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -22,11 +30,13 @@ export default {
           500: '#64748b',
           600: '#475569',
           700: '#334155',
-          800: '#1e293b',
+          800: '#1e293d',
           900: '#0f172a',
         },
       }
     }
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 };

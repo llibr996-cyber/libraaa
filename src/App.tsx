@@ -1,18 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import LoginForm from './components/LoginForm';
 import AdminDashboard from './components/AdminDashboard';
 import HomePage from './components/HomePage';
 import LandingPage from './components/LandingPage';
 import BookDetailPage from './components/BookDetailPage';
 import ReadWithUsPage from './components/ReadWithUsPage';
 import PostDetailPage from './components/PostDetailPage';
+import SetupGuide from './components/SetupGuide';
+import AdminLogin from './components/AdminLogin';
+import MemberLookupPage from './components/MemberLookupPage';
+import Spinner from './components/Spinner';
 
-const ProtectedRoute = ({ session, children }: { session: Session | null, children: JSX.Element }) => {
-  if (!session) {
-    return <Navigate to="/login" replace />;
+// List of allowed admin emails
+const ADMIN_EMAILS = ['admin@muhimmath.com', 'darkmod261@gmail.com'];
+
+const AdminRoute = ({ session, children }: { session: Session | null, children: JSX.Element }) => {
+  const location = useLocation();
+  
+  // Check if the user's email is in the allowed list
+  const isAdmin = session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
+
+  if (!session || !isAdmin) {
+    return <Navigate to="/admin-login" state={{ from: location }} replace />;
   }
   return children;
 };
@@ -38,10 +49,7 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+          <Spinner />
           <p className="text-gray-500">Loading Application...</p>
         </div>
       </div>
@@ -55,15 +63,29 @@ function App() {
       <Route path="/book/:bookId" element={<BookDetailPage />} />
       <Route path="/read-with-us" element={<ReadWithUsPage />} />
       <Route path="/read-with-us/:postId" element={<PostDetailPage />} />
-      <Route path="/login" element={session ? <Navigate to="/admin" /> : <LoginForm />} />
+      <Route path="/setup-guide" element={<SetupGuide />} />
+      <Route path="/member-status" element={<MemberLookupPage />} />
+      
+      {/* Auth Routes */}
+      <Route 
+        path="/admin-login" 
+        element={
+          session && session.user.email && ADMIN_EMAILS.includes(session.user.email) 
+            ? <Navigate to="/admin" /> 
+            : <AdminLogin />
+        } 
+      />
+      
+      {/* Protected Routes */}
       <Route
         path="/admin"
         element={
-          <ProtectedRoute session={session}>
+          <AdminRoute session={session}>
             <AdminDashboard />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
+
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

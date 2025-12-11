@@ -6,28 +6,36 @@ body {
     @apply bg-neutral-50 text-neutral-800 antialiased;
 }
 
+/* Custom prose styles to match theme */
 .prose {
-    font-size: 1.125rem;
-    line-height: 1.75;
+    @apply text-neutral-700;
 }
-.prose h1, .prose h2, .prose h3 {
-    @apply font-bold text-gray-900;
+.prose h1, .prose h2, .prose h3, .prose h4, .prose strong {
+    @apply text-neutral-900;
 }
 .prose a {
-    @apply text-purple-600 hover:text-purple-800;
+    @apply text-primary hover:text-primary-dark;
 }
 .prose blockquote {
-    @apply border-l-4 border-purple-200 pl-4 text-gray-600 italic;
+    @apply border-l-4 border-primary/20 pl-4 text-neutral-600 italic;
 }
+.prose code {
+    @apply text-primary-dark bg-primary/10 rounded-sm px-1 py-0.5 font-mono text-sm;
+}
+.prose pre {
+    @apply bg-neutral-800 text-white p-4 rounded-lg;
+}
+
 
 @media print {
   body * {
     visibility: hidden;
   }
-  #qr-print-area, #qr-print-area * {
+  #qr-print-area, #qr-print-area *,
+  #member-print-area, #member-print-area * {
     visibility: visible;
   }
-  #qr-print-area {
+  #qr-print-area, #member-print-area {
     position: absolute;
     left: 0;
     top: 0;
@@ -77,6 +85,26 @@ body {
     font-size: 5pt;
     font-family: monospace;
     color: #555;
+  }
+
+  /* Member Print Styles */
+  #member-print-area h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  #member-print-area table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+  #member-print-area th, #member-print-area td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+  }
+  #member-print-area th {
+    background-color: #f2f2f2;
   }
 }
 

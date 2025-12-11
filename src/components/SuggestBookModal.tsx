@@ -47,15 +47,15 @@ const SuggestBookModal: React.FC<SuggestBookModalProps> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Suggest a Book</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <div className="flex justify-between items-center p-6 border-b border-neutral-200">
+          <h2 className="text-xl font-semibold text-neutral-900">Suggest a Book</h2>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
             <X size={24} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Member *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Select Member *</label>
             <SearchableSelect
               value={selectedMember}
               onChange={(option: any) => {
@@ -70,36 +70,36 @@ const SuggestBookModal: React.FC<SuggestBookModalProps> = ({ onClose }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Book Title *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Book Title *</label>
             <input
               type="text"
               required
               value={formData.suggestion_title}
               onChange={(e) => setFormData({ ...formData, suggestion_title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Author</label>
             <input
               type="text"
               value={formData.suggestion_author}
               onChange={(e) => setFormData({ ...formData, suggestion_author: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Suggestion</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Reason for Suggestion</label>
             <textarea
               rows={3}
               value={formData.suggestion_reason}
               onChange={(e) => setFormData({ ...formData, suggestion_reason: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-md">Cancel</button>
-            <button type="submit" disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50">
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-neutral-100 rounded-md">Cancel</button>
+            <button type="submit" disabled={loading} className="px-4 py-2 bg-primary text-white rounded-md disabled:opacity-50">
               {loading ? 'Submitting...' : 'Submit Suggestion'}
             </button>
           </div>

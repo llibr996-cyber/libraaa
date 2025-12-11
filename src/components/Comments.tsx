@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase, type PostComment } from '../lib/supabase';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { Loader2, MessageSquare, Send } from 'lucide-react';
 
 interface CommentsProps {
   postId: string;
@@ -14,6 +15,7 @@ const Comments: React.FC<CommentsProps> = ({ postId }) => {
   const [newComment, setNewComment] = useState('');
   const [commenterName, setCommenterName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState<{type: 'error' | 'success', message: string} | null>(null);
 
   const fetchComments = useCallback(async () => {
     setLoading(true);
@@ -25,7 +27,8 @@ const Comments: React.FC<CommentsProps> = ({ postId }) => {
       .order('created_at', { ascending: false });
     
     if (error) {
-      setError('Could not load comments.');
+      setError('Could not load comments. This might be a permissions issue.');
+      console.error(error);
     } else {
       setComments(data);
     }
@@ -39,82 +42,105 @@ const Comments: React.FC<CommentsProps> = ({ postId }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !commenterName.trim()) {
-      alert('Please provide your name and a comment.');
+      setSubmissionStatus({ type: 'error', message: 'Please provide your name and a comment.' });
       return;
     }
     setIsSubmitting(true);
+    setSubmissionStatus(null);
     
     const { error } = await supabase.from('post_comments').insert({
       post_id: postId,
       commenter_name: commenterName,
       content: newComment,
+      is_approved: false,
     });
 
     if (error) {
-      alert('Failed to post comment. Please try again.');
+      let message = 'Failed to post comment. Please try again.';
+      if (error.code === '42501') { // RLS violation code
+        message = 'Permissions error. Please follow the setup guide to enable comments.';
+      }
+      setSubmissionStatus({ type: 'error', message });
+      console.error("Comment submission error:", error);
     } else {
-      alert('Comment submitted for approval. Thank you!');
+      setSubmissionStatus({ type: 'success', message: 'Comment submitted for approval. Thank you!' });
       setNewComment('');
-      // Keep commenter name for subsequent comments
     }
     setIsSubmitting(false);
   };
 
   return (
-    <div className="mt-12 pt-8 border-t border-gray-200">
-      <h3 className="text-2xl font-bold mb-6 text-gray-800">Comments ({comments.length})</h3>
-      <div className="bg-gray-50 p-6 rounded-lg mb-8 border border-gray-200">
+    <div className="mt-16 pt-12 border-t border-neutral-200">
+      <h3 className="text-3xl font-bold mb-8 text-neutral-800">Join the Conversation ({comments.length})</h3>
+      <div className="bg-neutral-50 p-6 rounded-xl mb-10 border border-neutral-200/80">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <h4 className="font-semibold text-lg text-gray-700">Leave a Comment</h4>
+          <h4 className="font-semibold text-lg text-neutral-700">Leave a Comment</h4>
+          
+          {submissionStatus && (
+            <div className={`px-4 py-3 rounded-lg text-sm ${submissionStatus.type === 'success' ? 'bg-green-100 border border-green-400 text-green-800' : 'bg-red-100 border border-red-400 text-red-700'}`}>
+              {submissionStatus.message}{' '}
+              {submissionStatus.message.includes('setup guide') && (
+                <Link to="/setup-guide" className="font-bold underline hover:text-red-900">
+                  View Guide
+                </Link>
+              )}
+            </div>
+          )}
+
           <div>
-            <label htmlFor="commenterName" className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+            <label htmlFor="commenterName" className="block text-sm font-medium text-neutral-700 mb-1">Your Name *</label>
             <input
               id="commenterName"
               type="text"
               value={commenterName}
               onChange={e => setCommenterName(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-primary-light focus:border-primary-light"
               placeholder="John Doe"
             />
           </div>
           <div>
-            <label htmlFor="newComment" className="block text-sm font-medium text-gray-700 mb-1">Your Comment</label>
+            <label htmlFor="newComment" className="block text-sm font-medium text-neutral-700 mb-1">Your Comment *</label>
             <textarea
               id="newComment"
               rows={4}
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-primary-light focus:border-primary-light"
               placeholder="Share your thoughts..."
             />
           </div>
           <div className="text-right">
-            <button type="submit" disabled={isSubmitting} className="bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50 transition-colors">
-              {isSubmitting ? <Loader2 className="animate-spin inline-block" /> : 'Post Comment'}
+            <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-primary-dark disabled:opacity-50 transition-colors flex items-center gap-2 ml-auto">
+              {isSubmitting ? <Loader2 className="animate-spin" /> : <Send size={16} />}
+              Post Comment
             </button>
           </div>
         </form>
       </div>
 
       <div className="space-y-6">
-        {loading ? <div className="flex justify-center py-8"><Loader2 className="animate-spin text-purple-500" size={32} /></div> :
-         error ? <p className="text-red-500 text-center">{error}</p> :
+        {loading ? <div className="flex justify-center py-8"><Loader2 className="animate-spin text-primary" size={32} /></div> :
+         error ? <p className="text-red-500 text-center">{error} <Link to="/setup-guide" className="font-bold underline hover:text-red-900">View Setup Guide</Link></p> :
          comments.length > 0 ? comments.map(comment => (
-          <div key={comment.id} className="flex gap-4 p-4 bg-white rounded-lg border border-gray-100">
-            <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex-shrink-0 flex items-center justify-center">
-              <span className="font-bold">{comment.commenter_name.charAt(0).toUpperCase()}</span>
+          <div key={comment.id} className="flex gap-4">
+            <div className="w-11 h-11 bg-primary/10 text-primary rounded-full flex-shrink-0 flex items-center justify-center mt-1">
+              <span className="font-bold text-lg">{comment.commenter_name.charAt(0).toUpperCase()}</span>
             </div>
-            <div>
-              <p className="font-semibold text-gray-800">{comment.commenter_name} <span className="text-sm font-normal text-gray-500 ml-2">{new Date(comment.created_at).toLocaleDateString()}</span></p>
-              <p className="text-gray-700 mt-1">{comment.content}</p>
+            <div className="flex-grow bg-neutral-50 rounded-xl p-4 border border-neutral-200/60">
+              <div className="flex items-baseline gap-3">
+                <p className="font-semibold text-neutral-800">{comment.commenter_name}</p>
+                <p className="text-xs text-neutral-500">{new Date(comment.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+              </div>
+              <p className="text-neutral-700 mt-1">{comment.content}</p>
             </div>
           </div>
          )) : (
-          <div className="text-center text-gray-500 py-8">
-            <MessageSquare size={32} className="mx-auto mb-2 text-gray-400" />
-            <p>No comments yet. Be the first to share your thoughts!</p>
+          <div className="text-center text-neutral-500 py-12 bg-neutral-50 rounded-xl border border-dashed">
+            <MessageSquare size={32} className="mx-auto mb-2 text-neutral-400" />
+            <p className="font-medium">No comments yet.</p>
+            <p className="text-sm">Be the first to share your thoughts!</p>
           </div>
          )
         }

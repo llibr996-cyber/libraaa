@@ -48,15 +48,15 @@ const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Write a Review</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <div className="flex justify-between items-center p-6 border-b border-neutral-200">
+          <h2 className="text-xl font-semibold text-neutral-900">Write a Review</h2>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
             <X size={24} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Member *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Select Member *</label>
             <SearchableSelect
               value={selectedMember}
               onChange={(option: any) => {
@@ -71,7 +71,7 @@ const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ onClose }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Book *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Select Book *</label>
             <SearchableSelect
               value={selectedBook}
               onChange={(option: any) => {
@@ -86,7 +86,7 @@ const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ onClose }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rating *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Rating *</label>
             <div className="flex">
               {[1, 2, 3, 4, 5].map(star => (
                 <button
@@ -98,7 +98,7 @@ const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ onClose }) => {
                   <Star
                     size={28}
                     className={`transition-colors ${
-                      star <= formData.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                      star <= formData.rating ? 'text-yellow-400 fill-current' : 'text-neutral-300'
                     }`}
                   />
                 </button>
@@ -106,17 +106,17 @@ const WriteReviewModal: React.FC<WriteReviewModalProps> = ({ onClose }) => {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Your Review</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Your Review</label>
             <textarea
               rows={4}
               value={formData.review}
               onChange={(e) => setFormData({ ...formData, review: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-md">Cancel</button>
-            <button type="submit" disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-md disabled:opacity-50">
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-neutral-100 rounded-md">Cancel</button>
+            <button type="submit" disabled={loading} className="px-4 py-2 bg-primary text-white rounded-md disabled:opacity-50">
               {loading ? 'Submitting...' : 'Submit Review'}
             </button>
           </div>

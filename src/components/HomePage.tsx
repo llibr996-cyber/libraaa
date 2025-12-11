@@ -35,17 +35,17 @@ const HomePage: React.FC = () => {
       icon: BarChart3,
       title: 'View Reports',
       description: 'Check out library statistics and popular books.',
-      bgColor: 'bg-purple-100',
-      iconColor: 'text-purple-600',
+      bgColor: 'bg-indigo-100',
+      iconColor: 'text-primary',
       onClick: () => setShowReportsModal(true),
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-medium text-purple-600 hover:text-purple-800 mb-6">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary-dark mb-6">
             <ArrowLeft size={16} /> Back to Landing Page
         </button>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

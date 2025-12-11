@@ -35,6 +35,7 @@ export interface Book {
   language?: Language;
   price?: number;
   categories?: Category;
+  register_date: string;
 }
 
 export interface Member {
@@ -62,6 +63,7 @@ export interface Circulation {
   return_date?: string;
   status: 'issued' | 'returned' | 'overdue' | 'lost';
   fine_amount: number;
+  fine_status?: 'paid' | 'unpaid' | 'none'; // Added fine_status
   created_at: string;
   updated_at: string;
   books?: Book;

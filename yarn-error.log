@@ -15,11 +15,11 @@ Platform:
 
 Trace: 
   Error: EIO: 'strip-ansi-cjs@6.0.1' not found in cache, try running install again
-      at Error.fromJSON (https://w-credentialless-staticblitz.com/fetch.worker.1db57326.js:1:239630)
-      at Error.create (https://w-credentialless-staticblitz.com/fetch.worker.1db57326.js:1:239165)
-      at _0x10d3c6._buildBatchRequest (https://w-credentialless-staticblitz.com/fetch.worker.1db57326.js:1:258908)
-      at _0x10d3c6.linkPackages (https://w-credentialless-staticblitz.com/fetch.worker.1db57326.js:1:256521)
-      at MessagePort._0x1f4cee (https://w-credentialless-staticblitz.com/fetch.worker.1db57326.js:1:226102)
+      at Error.fromJSON (https://w-credentialless-staticblitz.com/fetch.worker.365214aa.js:1:238632)
+      at Error.create (https://w-credentialless-staticblitz.com/fetch.worker.365214aa.js:1:238193)
+      at _0x429a25._buildBatchRequest (https://w-credentialless-staticblitz.com/fetch.worker.365214aa.js:1:257807)
+      at _0x429a25.linkPackages (https://w-credentialless-staticblitz.com/fetch.worker.365214aa.js:1:255424)
+      at MessagePort._0x4ba5fe (https://w-credentialless-staticblitz.com/fetch.worker.365214aa.js:1:225186)
 
 npm manifest: 
   {
@@ -48,6 +48,7 @@ npm manifest:
       "react-select": "^5.10.2"
     },
     "devDependencies": {
+      "@tailwindcss/typography": "^0.5.14",
       "@eslint/js": "^9.27.0",
       "@types/jszip": "^3.4.1",
       "@types/qrcode": "^1.5.5",
